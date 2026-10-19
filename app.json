@@ -1,0 +1,14 @@
+{
+  "expo": {
+    "name": "Easool",
+    "slug": "easool",
+    "scheme": "easool",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "plugins": ["expo-router", "expo-secure-store"],
+    "experiments": { "typedRoutes": true },
+    "ios": { "bundleIdentifier": "in.easool.app", "supportsTablet": true },
+    "android": { "package": "in.easool.app" }
+  }
+}
