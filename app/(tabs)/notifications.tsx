@@ -2,9 +2,14 @@ import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
 import { getNotifications, markRead, AppNotification } from "../../src/api/notifications";
 import { errorMessage } from "../../src/api/client";
+import { useRouter } from "expo-router";
+import { useAuth } from "../../src/auth/AuthContext";
+import { notificationTarget } from "../../src/notificationTarget";
 import { colors } from "../../src/theme";
 
 export default function NotificationsScreen() {
+  const router = useRouter();
+  const { user } = useAuth();
   const [rows, setRows] = useState<AppNotification[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -29,8 +34,10 @@ export default function NotificationsScreen() {
       setRows((prev) => prev.map((x) => (x.id === n.id ? { ...x, read: true, isRead: true } : x)));
       markRead(n.id).catch(() => {});
     }
-    // Tap-to-open deep links (assignment popup, notice) arrive with the next PR, mirroring the
-    // website's notificationTarget().
+    // Same destinations as the website's notificationTarget(): the assignment popup or the
+    // notice, opened directly.
+    const target = notificationTarget(n, user?.role);
+    if (target) router.navigate(target as any);
   };
 
   if (loading) return <View style={s.center}><ActivityIndicator color={colors.navy} /></View>;
