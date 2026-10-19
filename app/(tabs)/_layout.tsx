@@ -9,6 +9,7 @@ export default function TabsLayout() {
       tabBarActiveTintColor: colors.navy,
     }}>
       <Tabs.Screen name="index" options={{ title: "Assignments" }} />
+      <Tabs.Screen name="notices" options={{ title: "Notices" }} />
       <Tabs.Screen name="notifications" options={{ title: "Notifications" }} />
       <Tabs.Screen name="account" options={{ title: "Account" }} />
     </Tabs>
