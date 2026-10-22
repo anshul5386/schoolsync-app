@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { useRouter } from "expo-router";
 import { useAuth } from "../src/auth/AuthContext";
 import { errorMessage } from "../src/api/client";
 import { isApiConfigured } from "../src/config";
@@ -7,6 +8,7 @@ import { colors } from "../src/theme";
 
 export default function LoginScreen() {
   const { login } = useAuth();
+  const router = useRouter();
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -47,6 +49,10 @@ export default function LoginScreen() {
         <Pressable onPress={submit} disabled={busy || !phone || !password}
           style={[s.button, (busy || !phone || !password) && { opacity: 0.5 }]}>
           <Text style={s.buttonText}>{busy ? "Signing in…" : "Sign in"}</Text>
+        </Pressable>
+
+        <Pressable onPress={() => router.push("/register")} style={{ marginTop: 16, alignItems: "center" }}>
+          <Text style={{ color: colors.navy, fontSize: 13, fontWeight: "600" }}>New here? Request an account</Text>
         </Pressable>
       </View>
     </KeyboardAvoidingView>

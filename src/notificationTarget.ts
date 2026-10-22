@@ -16,7 +16,7 @@ export function notificationTarget(
       return { pathname: "/notices", ...(n.referenceId ? { params: { highlight: n.referenceId } } : {}) };
     case "ASSIGNMENT":
       if (role === "STUDENT") {
-        return { pathname: "/", ...(n.referenceId ? { params: { highlight: n.referenceId } } : {}) };
+        return { pathname: "/my-assignments", ...(n.referenceId ? { params: { highlight: n.referenceId } } : {}) };
       }
       return null;
     default:
