@@ -1,11 +1,11 @@
 import { useEffect } from "react";
 import { ActivityIndicator, View } from "react-native";
-import { Slot, useRouter, useSegments } from "expo-router";
+import { Stack, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { AuthProvider, useAuth } from "../src/auth/AuthContext";
 import { colors } from "../src/theme";
 
-/** Sends signed-out users to /login and signed-in users away from it. */
+/** Signed-out users may only see /login and /register; signed-in users are kept off them. */
 function Gate() {
   const { user, loading } = useAuth();
   const segments = useSegments();
@@ -13,9 +13,9 @@ function Gate() {
 
   useEffect(() => {
     if (loading) return;
-    const onLogin = segments[0] === "login";
-    if (!user && !onLogin) router.replace("/login");
-    else if (user && onLogin) router.replace("/");
+    const open = segments[0] === "login" || segments[0] === "register";
+    if (!user && !open) router.replace("/login");
+    else if (user && open) router.replace("/");
   }, [user, loading, segments, router]);
 
   if (loading) {
@@ -25,7 +25,13 @@ function Gate() {
       </View>
     );
   }
-  return <Slot />;
+  return (
+    <Stack screenOptions={{ headerStyle: { backgroundColor: colors.white }, headerTitleStyle: { color: colors.ink },
+      headerTintColor: colors.navy, headerBackTitle: "Back", contentStyle: { backgroundColor: colors.canvas } }}>
+      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen name="login" options={{ headerShown: false }} />
+    </Stack>
+  );
 }
 
 export default function RootLayout() {

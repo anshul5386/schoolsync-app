@@ -1,18 +1,21 @@
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import type { Assignment } from "../api/studentRecords";
+import AttachmentBar from "./AttachmentBar";
 import { colors } from "../theme";
 
 /**
  * The full view of one assignment, opened by tapping its title or a notification about it.
  * The phone equivalent of the website's popup: full description, nothing truncated.
- * Attachments (authenticated file download and viewing) arrive in the next PR.
+ * Attachments are listed and opened with the signed-in token; staff (canUpload) can also attach files.
  */
 export default function AssignmentDetailModal({
   assignment,
   onClose,
+  canUpload = false,
 }: {
   assignment: Assignment | null;
   onClose: () => void;
+  canUpload?: boolean;
 }) {
   return (
     <Modal visible={!!assignment} transparent animationType="fade" onRequestClose={onClose}>
@@ -34,6 +37,9 @@ export default function AssignmentDetailModal({
                   .filter(Boolean).join(" · ")}
               </Text>
               {!!assignment.description && <Text style={s.body}>{assignment.description}</Text>}
+              <View style={s.attach}>
+                <AttachmentBar entityType="ASSIGNMENT" entityId={assignment.id} canUpload={canUpload} />
+              </View>
             </ScrollView>
           )}
         </Pressable>
@@ -56,5 +62,6 @@ const s = StyleSheet.create({
   close: { fontSize: 28, lineHeight: 28, color: colors.inkSubtle },
   title: { fontSize: 18, fontWeight: "700", color: colors.ink },
   meta: { fontSize: 12, color: colors.inkSubtle, marginTop: 6, marginBottom: 14 },
+  attach: { borderTopWidth: 1, borderTopColor: colors.line, marginTop: 14, paddingTop: 8 },
   body: { fontSize: 14, lineHeight: 21, color: colors.inkMuted },
 });
