@@ -11,7 +11,7 @@ export default function MenuScreen() {
   const router = useRouter();
   return (
     <Screen>
-      <Title sub={user?.role?.replace(/_/g, " ")}>{user?.name}</Title>
+      <Title sub={user?.schoolName || user?.role?.replace(/_/g, " ")}>{user?.name}</Title>
       {menuFor(user?.role).map((m) => (
         <Card key={m.path} onPress={() => router.push(m.path as any)}>
           <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>

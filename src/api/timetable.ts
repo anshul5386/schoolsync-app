@@ -17,3 +17,21 @@ export const getTimetable = (classSectionId: string, day?: string) =>
 export const saveTimetableSlot = (payload: SlotPayload) => api.post("/timetable/slots", payload);
 
 export const deleteTimetableSlot = (id: string) => api.delete(`/timetable/slots/${id}`);
+
+export const upsertSlot = saveTimetableSlot;
+export const deleteSlot = deleteTimetableSlot;
+
+export const copyTimetableDay = (payload: {
+  classSectionId: string;
+  fromDay: string;
+  toDays: string[];
+}) => api.post("/timetable/copy/day", payload);
+
+export const copyTimetableClass = (payload: {
+  fromClassSectionId: string;
+  toClassSectionId: string;
+  days?: string[];
+}) => api.post("/timetable/copy/class", payload);
+
+export const seedTimetableTemplate = (classSectionId: string) =>
+  api.post("/timetable/seed-template", null, { params: { classSectionId } });

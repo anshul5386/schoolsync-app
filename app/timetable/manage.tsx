@@ -4,7 +4,10 @@ import { Stack } from "expo-router";
 import { getMyClasses } from "../../src/api/classes";
 import { getTeacherOptions } from "../../src/api/teacherCalendar";
 import { getSubjects } from "../../src/api/subjects";
-import { getTimetable, saveTimetableSlot, deleteTimetableSlot } from "../../src/api/timetable";
+import {
+  getTimetable, saveTimetableSlot, deleteTimetableSlot,
+  copyTimetableDay, copyTimetableClass, seedTimetableTemplate,
+} from "../../src/api/timetable";
 import { errorMessage } from "../../src/api/client";
 import { useAuth } from "../../src/auth/AuthContext";
 import { useLoad, unwrap } from "../../src/lib/useLoad";
@@ -13,6 +16,11 @@ import { colors } from "../../src/theme";
 
 const DAYS = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"];
 const DAY_LABEL: Record<string, string> = { MONDAY: "Monday", TUESDAY: "Tuesday", WEDNESDAY: "Wednesday", THURSDAY: "Thursday", FRIDAY: "Friday", SATURDAY: "Saturday" };
+
+function previousDay(day: string) {
+  const i = DAYS.indexOf(day);
+  return i > 0 ? DAYS[i - 1] : null;
+}
 
 type PeriodRow = { id: string | null; periodNumber: number; subject: string; teacherId: string; startTime: string; endTime: string };
 type Msg = { type: "success" | "error"; text: string } | null;
@@ -39,6 +47,8 @@ export default function TimetableManageScreen() {
   const [rows, setRows] = useState<PeriodRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [busyIndex, setBusyIndex] = useState<number | null>(null);
+  const [copyBusy, setCopyBusy] = useState(false);
+  const [copyFromClassId, setCopyFromClassId] = useState("");
   const [message, setMessage] = useState<Msg>(null);
 
   useEffect(() => {
@@ -128,12 +138,71 @@ export default function TimetableManageScreen() {
   };
 
   const cls = classes.find((c) => c.id === classId);
+  const prevDay = previousDay(day);
+  const otherClasses = classes.filter((c) => c.id !== classId);
   const refresh = async () => { await setup.reload(); await load(); };
+
+  const runCopyFromPrevious = async () => {
+    if (!prevDay) {
+      setMessage({ type: "error", text: "Monday has no previous day. Copy from another class or use rest of week from Tuesday." });
+      return;
+    }
+    setCopyBusy(true);
+    try {
+      await copyTimetableDay({ classSectionId: classId, fromDay: prevDay, toDays: [day] });
+      setMessage({ type: "success", text: `Copied ${DAY_LABEL[prevDay]} → ${DAY_LABEL[day]}.` });
+      await load();
+    } catch (err) {
+      setMessage({ type: "error", text: errorMessage(err, "Copy failed.") });
+    } finally { setCopyBusy(false); }
+  };
+
+  const runCopyRestOfWeek = async () => {
+    const targets = DAYS.filter((d) => d !== day);
+    if (!(await confirm("Copy week pattern",
+      `Copy ${DAY_LABEL[day]} to all other weekdays? Existing periods on those days will be replaced.`,
+      "Copy"))) return;
+    setCopyBusy(true);
+    try {
+      await copyTimetableDay({ classSectionId: classId, fromDay: day, toDays: targets });
+      setMessage({ type: "success", text: "Weekly pattern copied." });
+    } catch (err) {
+      setMessage({ type: "error", text: errorMessage(err, "Copy failed. Save this day first.") });
+    } finally { setCopyBusy(false); }
+  };
+
+  const runSeed = async () => {
+    if (!(await confirm("Sample week", "Apply sample Mon–Sat timetable? Only works when this class has no periods yet.", "Apply"))) return;
+    setCopyBusy(true);
+    try {
+      await seedTimetableTemplate(classId);
+      setMessage({ type: "success", text: "Sample week applied." });
+      await load();
+    } catch (err) {
+      setMessage({ type: "error", text: errorMessage(err, "Could not apply sample.") });
+    } finally { setCopyBusy(false); }
+  };
+
+  const runCopyClass = async () => {
+    if (!copyFromClassId) {
+      setMessage({ type: "error", text: "Choose a class to copy from." });
+      return;
+    }
+    if (!(await confirm("Copy class", "Copy full weekly timetable from the selected class?", "Copy"))) return;
+    setCopyBusy(true);
+    try {
+      await copyTimetableClass({ fromClassSectionId: copyFromClassId, toClassSectionId: classId });
+      setMessage({ type: "success", text: "Timetable copied." });
+      await load();
+    } catch (err) {
+      setMessage({ type: "error", text: errorMessage(err, "Copy failed.") });
+    } finally { setCopyBusy(false); }
+  };
 
   return (
     <Screen onRefresh={refresh}>
       <Stack.Screen options={{ title: "Build timetable" }} />
-      <Title sub="Set the periods for one class on one day. Students, teachers and the substitution screen all read from what is saved here.">
+      <Title sub="Timetables repeat every week — build one day, save periods, then copy to the rest.">
         Build the timetable
       </Title>
       {!!setup.error && <Message m={{ type: "error", text: setup.error }} />}
@@ -141,6 +210,31 @@ export default function TimetableManageScreen() {
 
       {setup.loading ? <Loading /> : (
         <>
+          <Card title="Quick fill">
+            <Text style={{ fontSize: 12, color: colors.inkMuted, marginBottom: 8 }}>
+              Save periods on a day first, then copy. Empty Wed/Thu can be filled from Tuesday in one tap.
+            </Text>
+            <Row style={{ flexWrap: "wrap", gap: 8 }}>
+              {prevDay && (
+                <Button small variant="secondary" busy={copyBusy} onPress={runCopyFromPrevious}>
+                  {DAY_LABEL[prevDay].slice(0, 3)} → {DAY_LABEL[day].slice(0, 3)}
+                </Button>
+              )}
+              <Button small variant="secondary" busy={copyBusy} onPress={runCopyRestOfWeek}>
+                Copy to rest of week
+              </Button>
+              <Button small variant="secondary" busy={copyBusy} onPress={runSeed}>
+                Sample week
+              </Button>
+            </Row>
+            {otherClasses.length > 0 && (
+              <>
+                <Select label="Copy from class" value={copyFromClassId} onChange={setCopyFromClassId} placeholder="Another class…"
+                  options={otherClasses.map((c) => ({ value: c.id, label: `Class ${c.grade}-${c.section}` }))} />
+                <Button small busy={copyBusy} onPress={runCopyClass}>Copy class timetable</Button>
+              </>
+            )}
+          </Card>
           <Select label="Class" value={classId} onChange={setClassId}
             options={classes.map((c) => ({ value: c.id, label: `Class ${c.grade}-${c.section}` }))} />
           <Tabs2 tabs={DAYS.map((d) => ({ value: d, label: DAY_LABEL[d].slice(0, 3) }))} value={day} onChange={setDay} />

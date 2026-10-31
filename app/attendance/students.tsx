@@ -185,9 +185,13 @@ function MarkAttendanceView() {
       <Stack.Screen options={{ title: "Student attendance" }} />
       <Title sub="Mark P/A/L — parents get instant WhatsApp alert">Student attendance</Title>
       {!!classesLoad.error && <Message m={{ type: "error", text: classesLoad.error }} />}
-      {message && (message.type === "info"
-        ? <Text style={{ padding: 10, borderRadius: 8, fontSize: 13, backgroundColor: colors.navy50, color: colors.navy }}>{message.text}</Text>
-        : <Message m={message} />)}
+      {message && (
+        message.type === "info"
+          ? <Text style={{ padding: 10, borderRadius: 8, fontSize: 13, backgroundColor: colors.navy50, color: colors.navy }}>{message.text}</Text>
+          : (message.type === "success" || message.type === "error")
+            ? <Message m={{ type: message.type, text: message.text }} />
+            : null
+      )}
 
       <Select label="Class" value={grade} onChange={setGrade} placeholder="Class..."
         options={grades.map((g) => ({ value: g, label: `Class ${g}` }))} />
