@@ -9,6 +9,7 @@ const SCHOOL_ADMINS = ["PRINCIPAL", "COORDINATOR", "SCHOOL_ADMIN"];
 
 export const MENU: MenuItem[] = [
   { path: "/my-assignments", title: "My assignments", desc: "Work set for your class", roles: ["STUDENT"] },
+  { path: "/my-results", title: "My results", desc: "Exam results and marks", roles: ["STUDENT"] },
   { path: "/attendance/students", title: "Student attendance", desc: "Mark and view attendance",
     roles: [...SCHOOL_ADMINS, "SUB_COORDINATOR", "TEACHER", "STUDENT"] },
   { path: "/attendance/teachers", title: "Teacher attendance", desc: "Staff attendance", roles: ["PRINCIPAL", "COORDINATOR"] },
@@ -19,6 +20,8 @@ export const MENU: MenuItem[] = [
   { path: "/substitution", title: "Substitution", desc: "Cover absent teachers", roles: ["PRINCIPAL", "COORDINATOR"] },
   { path: "/records", title: "Records", desc: "Assignments, exams and results",
     roles: ["PRINCIPAL", "COORDINATOR", "TEACHER", "DIRECTOR", "CHAIRMAN"] },
+  { path: "/lesson-plans", title: "Lesson plans", desc: "Plan and track your lessons",
+    roles: ["TEACHER", "PRINCIPAL", "COORDINATOR", "SCHOOL_ADMIN", "SUB_COORDINATOR"] },
   { path: "/approvals", title: "Account requests", desc: "Approve new accounts", roles: ["PRINCIPAL", "SCHOOL_ADMIN", "SUPER_ADMIN"] },
   { path: "/teachers/manage", title: "Teachers", desc: "Responsibilities per class", roles: ["PRINCIPAL", "SCHOOL_ADMIN"] },
   { path: "/subjects", title: "Subjects", desc: "School subject list", roles: ["PRINCIPAL", "SCHOOL_ADMIN"] },
