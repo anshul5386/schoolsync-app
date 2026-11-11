@@ -8,7 +8,50 @@ Cloud builds **fail** until `app.json` contains Expo `projectId`. Warnings about
 2. **Projects** → open **Easool** (or **Create** → name Easool, slug `easool`).
 3. **Project settings** → copy **Project ID** (UUID like `a1b2c3d4-...`).
 4. GitHub app or mobile browser → **schoolsync-app** → edit `app.json` → add `owner` + `extra.eas.projectId` (see README), commit to the branch EAS builds from.
-5. Expo → **Builds** → run **preview** Android APK again → install link on phone.
+5. Expo → **Builds** → profile **`preview`** or **`pilot`** (not **production**) → Android → install link on phone.
+
+## Development build (custom “Easool” dev app, not Expo Go)
+
+Per [Expo development builds](https://docs.expo.dev/develop/development-builds/introduction/): a **development build** is your own app shell (with `expo-dev-client`) that can load JavaScript from a **development server** (QR / Metro), like a private Expo Go with your native modules (`expo-secure-store`, etc.).
+
+**On expo.dev (phone only, after GitHub has `expo-dev-client` + updated `eas.json`):**
+
+1. **Develop & deploy** → **Get started with development builds** (or **Build from GitHub**).
+2. Profile: **`development`** (not production).
+3. Platform: **Android** → wait → **Install** / scan QR → install **APK**.
+4. Open **Easool** on the phone → launcher screen → connect to a dev server (scan QR from `npx expo start`) **or** use **Updates** tab if you publish with EAS Update.
+
+**Important for you (no laptop):**
+
+| Goal | Use |
+|------|-----|
+| Test the app as users see it (production API, no dev server) | **`preview`** / **`pilot`** APK |
+| Develop / reload JS from a computer via QR | **`development`** APK |
+
+A development build **alone** does not load your screens until it connects to Metro or an EAS Update. For daily QA without a Mac, prefer **preview** first; use **development** when someone can run `npx expo start` (or you set up EAS Update).
+
+**After native changes** (new native module, `app.json` plugins): rebuild **development** on Expo.
+
+### APK vs AAB
+
+| Profile | Android output | Install on phone directly? |
+|---------|----------------|----------------------------|
+| **preview** / **pilot** | **APK** | Yes — download `.apk` or scan install QR |
+| **production** | **AAB** (`.aab`) | No — for Play Store only (use [internal testing](https://play.google.com/console) or build **preview** instead) |
+
+If you only see **`.aab`**, you built **production**. Start a new build and pick **preview** or **pilot**.
+
+### Install QR (no laptop)
+
+`eas.json` does **not** create an Expo Go dev QR (that needs `expo start` on a computer).
+
+For **pilot/preview** builds with `"distribution": "internal"`, Expo shows an **install QR** on the phone:
+
+1. [expo.dev](https://expo.dev) → your project → **Builds** → open the green build.
+2. Tap **Install** (or **Open with Orbit** / share link).
+3. Scan the **QR** with the phone camera — it opens the APK install page (Android).
+
+Share that same link/QR with testers; they do not need Expo Go.
 
 ## Prerequisites
 

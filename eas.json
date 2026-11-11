@@ -7,8 +7,13 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal",
+      "node": "22.11.0",
+      "android": {
+        "buildType": "apk"
+      },
       "env": {
-        "EXPO_PUBLIC_API_BASE_URL": "https://schoolsync-api-production.up.railway.app"
+        "EXPO_PUBLIC_API_BASE_URL": "https://schoolsync-api-production.up.railway.app",
+        "EAS_BUILD_NO_EXPO_GO_WARNING": "true"
       }
     },
     "preview": {
@@ -25,7 +30,14 @@
         "EAS_BUILD_NO_EXPO_GO_WARNING": "true"
       }
     },
+    "pilot": {
+      "extends": "preview"
+    },
     "production": {
+      "distribution": "store",
+      "android": {
+        "buildType": "app-bundle"
+      },
       "env": {
         "EXPO_PUBLIC_API_BASE_URL": "https://schoolsync-api-production.up.railway.app"
       }
