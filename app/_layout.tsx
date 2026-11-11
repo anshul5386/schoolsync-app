@@ -2,7 +2,9 @@ import { useEffect } from "react";
 import { ActivityIndicator, View } from "react-native";
 import { Stack, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider, useAuth } from "../src/auth/AuthContext";
+import { queryClient } from "../src/queryClient";
 import { colors } from "../src/theme";
 
 /** Signed-out users may only see /login and /register; signed-in users are kept off them. */
@@ -36,9 +38,11 @@ function Gate() {
 
 export default function RootLayout() {
   return (
-    <AuthProvider>
-      <StatusBar style="dark" />
-      <Gate />
-    </AuthProvider>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <StatusBar style="dark" />
+        <Gate />
+      </AuthProvider>
+    </QueryClientProvider>
   );
 }

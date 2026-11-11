@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
-import { Text } from "react-native";
+import { Text, View } from "react-native";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
-import { activateUser, deactivateUser, getAllSchools, getAllUsers } from "../../src/api/superAdmin";
+import { activateUser, deactivateUser, getAllSchools, getAllUsers, resetSuperAdminUserPassword } from "../../src/api/superAdmin";
 import { errorMessage } from "../../src/api/client";
 import { useAuth } from "../../src/auth/AuthContext";
 import { useLoad, unwrap } from "../../src/lib/useLoad";
-import { Button, Card, Chip, Empty, Loading, Message, Row, Screen, Select, Title } from "../../src/ui";
+import { Button, Card, Chip, Empty, Field, Loading, Message, Row, Screen, Select, Title } from "../../src/ui";
 import { colors } from "../../src/theme";
 
 const ROLES = ["PRINCIPAL", "SCHOOL_ADMIN", "COORDINATOR", "SUB_COORDINATOR", "TEACHER", "STUDENT"];
@@ -18,6 +18,8 @@ export default function UsersScreen() {
   const [role, setRole] = useState(params.role ? String(params.role) : "");
   const [busyId, setBusyId] = useState<string | null>(null);
   const [actionError, setActionError] = useState("");
+  const [resetFor, setResetFor] = useState<any | null>(null);
+  const [newPassword, setNewPassword] = useState("");
 
   // Follow route params if they change (e.g. arriving from a school's "users" link).
   useEffect(() => {
@@ -42,6 +44,22 @@ export default function UsersScreen() {
       await reload();
     } catch (err) {
       setActionError(errorMessage(err, "Could not update the user."));
+    } finally { setBusyId(null); }
+  };
+
+  const submitReset = async () => {
+    if (!resetFor || newPassword.length < 6) {
+      setActionError("Password must be at least 6 characters.");
+      return;
+    }
+    setBusyId(resetFor.id);
+    setActionError("");
+    try {
+      await resetSuperAdminUserPassword(resetFor.id, newPassword);
+      setResetFor(null);
+      setNewPassword("");
+    } catch (err) {
+      setActionError(errorMessage(err, "Could not reset password."));
     } finally { setBusyId(null); }
   };
 
@@ -73,13 +91,28 @@ export default function UsersScreen() {
             <Chip tone={u.active ? "green" : "grey"}>{u.active ? "Active" : "Disabled"}</Chip>
           </Row>
           {!!u.email && <Text style={{ fontSize: 11, color: colors.inkSubtle }}>{u.email}</Text>}
-          <Text style={{ fontSize: 12, color: colors.inkMuted }}>{u.phone} · {u.schoolName || "—"}</Text>
+          <Text style={{ fontSize: 12, color: colors.inkMuted }}>
+            UserName {u.username || "—"} · {u.phone} · {u.schoolName || "—"}
+          </Text>
           <Chip tone="grey">{u.role}</Chip>
           <Button small variant="secondary" busy={busyId === u.id} onPress={() => toggleActive(u)}>
             {u.active ? "Disable" : "Enable"}
           </Button>
+          <Button small variant="secondary" onPress={() => { setResetFor(u); setNewPassword(""); }}>
+            Reset password
+          </Button>
         </Card>
       ))}
+
+      {resetFor && (
+        <Card title={`Password for ${resetFor.name}`}>
+          <Field label="New password (min 6)" value={newPassword} onChangeText={setNewPassword} secureTextEntry />
+          <Row>
+            <View style={{ flex: 1 }}><Button busy={busyId === resetFor.id} onPress={submitReset}>Save</Button></View>
+            <View style={{ flex: 1 }}><Button variant="secondary" onPress={() => setResetFor(null)}>Cancel</Button></View>
+          </Row>
+        </Card>
+      )}
     </Screen>
   );
 }

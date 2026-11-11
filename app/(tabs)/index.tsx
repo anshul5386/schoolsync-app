@@ -111,7 +111,7 @@ function Dashboard() {
             )}
             {isTeacher && (
               <>
-                <Stat label="My classes" value={String(stats?.myClassCount ?? 0)} sub="Assigned to you" />
+                <Stat label="My periods" value={String(stats?.myClassCount ?? 0)} sub="Assigned to you" />
                 <Stat label="Attendance marked" value={`${stats?.classesAttMarked ?? 0}/${stats?.myClassCount ?? 0}`}
                   tone={teacherDone(stats) ? "success" : "warning"} sub={teacherDone(stats) ? "All done today" : "Still outstanding"} />
               </>
@@ -256,17 +256,17 @@ function deriveFocus({ stats, isAdmin, isTeacher, isStudent, pending }: {
     if (outstanding > 0) {
       return {
         kicker: "Needs attention",
-        title: `Attendance pending for ${outstanding} of your ${total} classes`,
-        body: "Parents are notified automatically once you mark a class, so it is worth doing early.",
+        title: `Attendance pending for ${outstanding} of your ${total} periods`,
+        body: "Parents are notified automatically once you mark attendance, so it is worth doing early.",
         figure: `${marked}/${total}`,
-        figureCaption: "classes marked",
+        figureCaption: "periods marked",
         primary: { to: "/attendance/students", label: "Mark attendance" },
       };
     }
     return {
       tone: "calm",
       kicker: "All done",
-      title: "Every class is marked for today",
+      title: "Every period is marked for today",
       body: "Nothing else needs your attention right now.",
       primary: { to: "/timetable", label: "View your timetable" },
     };

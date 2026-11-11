@@ -118,6 +118,60 @@ export function Select({ label, value, onChange, options, placeholder = "Choose�
   );
 }
 
+/** Select with in-sheet search — for long school/class lists. */
+export function SearchableSelect({ label, value, onChange, options, placeholder = "Choose…", hint, searchPlaceholder = "Search…" }: {
+  label: string; value: string; onChange: (v: string) => void; options: Option[]; placeholder?: string; hint?: string; searchPlaceholder?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [q, setQ] = useState("");
+  const current = options.find((o) => o.value === value);
+  const filtered = options.filter((o) => {
+    const needle = q.trim().toLowerCase();
+    if (!needle) return true;
+    return o.label.toLowerCase().includes(needle);
+  });
+  return (
+    <View>
+      <Text style={s.label}>{label}</Text>
+      <Pressable style={[s.input, { flexDirection: "row", justifyContent: "space-between" }]} onPress={() => setOpen(true)}>
+        <Text style={{ color: current ? colors.ink : colors.inkSubtle, fontSize: 15, flex: 1 }} numberOfLines={1}>{current?.label ?? placeholder}</Text>
+        <Text style={{ color: colors.inkSubtle }}>▾</Text>
+      </Pressable>
+      {!!hint && <Text style={s.hint}>{hint}</Text>}
+      <Modal visible={open} transparent animationType="slide" onRequestClose={() => setOpen(false)}>
+        <Pressable style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "flex-end" }} onPress={() => setOpen(false)}>
+          <Pressable style={{ backgroundColor: colors.white, borderTopLeftRadius: 16, borderTopRightRadius: 16, maxHeight: "75%", paddingBottom: 24 }} onPress={() => {}}>
+            <Text style={{ padding: 16, fontWeight: "700", color: colors.ink }}>{label}</Text>
+            <TextInput value={q} onChangeText={setQ} placeholder={searchPlaceholder} placeholderTextColor={colors.inkSubtle}
+              style={[s.input, { marginHorizontal: 16, marginBottom: 8 }]} />
+            <ScrollView>
+              {filtered.length === 0 && <Text style={{ padding: 16, color: colors.inkMuted }}>No matches.</Text>}
+              {filtered.map((o) => (
+                <Pressable key={o.value} onPress={() => { onChange(o.value); setOpen(false); setQ(""); }}
+                  style={{ paddingVertical: 14, paddingHorizontal: 16, borderTopWidth: 1, borderTopColor: colors.line,
+                    backgroundColor: o.value === value ? colors.navy50 : colors.white }}>
+                  <Text style={{ fontSize: 15, color: o.value === value ? colors.navy : colors.ink }}>{o.label}</Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+          </Pressable>
+        </Pressable>
+      </Modal>
+    </View>
+  );
+}
+
+/** Placeholder rows while lists load (use with React Query isFetching). */
+export function Skeleton({ lines = 3 }: { lines?: number }) {
+  return (
+    <View style={{ gap: 10 }}>
+      {Array.from({ length: lines }).map((_, i) => (
+        <View key={i} style={{ height: 56, borderRadius: 10, backgroundColor: colors.line, opacity: 0.5 }} />
+      ))}
+    </View>
+  );
+}
+
 /** Date as "YYYY-MM-DD" (what the API takes). */
 export function DateField({ label, value, onChange, hint }: { label: string; value: string; onChange: (v: string) => void; hint?: string }) {
   const [open, setOpen] = useState(false);

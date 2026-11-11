@@ -2,29 +2,63 @@ import { useState } from "react";
 import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useAuth } from "../src/auth/AuthContext";
+import { loginWithPassword, selectStudent } from "../src/api/auth";
+import { extractLoginPayload, loginErrorMessage, type StudentLoginOption } from "../src/api/loginAuth";
 import { errorMessage } from "../src/api/client";
-import { isApiConfigured } from "../src/config";
+import { isApiConfigured, API_BASE_URL } from "../src/config";
 import { colors } from "../src/theme";
 
 export default function LoginScreen() {
-  const { login } = useAuth();
+  const { applySession } = useAuth();
   const router = useRouter();
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [studentPick, setStudentPick] = useState<{
+    selectionToken: string;
+    studentOptions: StudentLoginOption[];
+  } | null>(null);
 
-  const submit = async () => {
+  const finishLogin = async (auth: Parameters<typeof applySession>[0]) => {
+    await applySession(auth);
+    router.replace("/");
+  };
+
+  const signIn = async () => {
     setError("");
+    setStudentPick(null);
     if (!isApiConfigured) {
-      setError("The app is not connected to the server yet. Set EXPO_PUBLIC_API_BASE_URL.");
+      setError("Set EXPO_PUBLIC_API_BASE_URL in .env (no /api suffix).");
       return;
     }
     setBusy(true);
     try {
-      await login(phone.trim(), password);
-    } catch (e: any) {
-      setError(errorMessage(e, "Login failed. Check your phone number and password."));
+      const res = await loginWithPassword(phone.trim(), password);
+      const payload = extractLoginPayload(res);
+      if (payload.kind === "selectStudent") {
+        setStudentPick({ selectionToken: payload.selectionToken, studentOptions: payload.studentOptions });
+        return;
+      }
+      await finishLogin(payload.auth);
+    } catch (e) {
+      setError(loginErrorMessage(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const confirmStudent = async (userId: string) => {
+    if (!studentPick) return;
+    setError("");
+    setBusy(true);
+    try {
+      const res = await selectStudent(studentPick.selectionToken, userId);
+      const auth = res.data?.data;
+      if (!auth?.token) throw new Error("Sign-in failed");
+      await finishLogin(auth);
+    } catch (e) {
+      setError(errorMessage(e, "Could not sign in as that student."));
     } finally {
       setBusy(false);
     }
@@ -36,38 +70,65 @@ export default function LoginScreen() {
         <Text style={s.brand}>Easool</Text>
         <Text style={s.sub}>Sign in to your school account</Text>
 
-        <Text style={s.label}>Phone number</Text>
-        <TextInput style={s.input} value={phone} onChangeText={setPhone} keyboardType="phone-pad"
-          autoComplete="tel" placeholder="10-digit mobile number" placeholderTextColor={colors.inkSubtle} />
+        {!studentPick ? (
+          <>
+            <Text style={s.label}>UserName</Text>
+            <TextInput style={s.input} value={phone} onChangeText={setPhone} keyboardType="default"
+              autoCapitalize="characters" autoComplete="username" placeholder="QA-SCH-001-STU-0001" placeholderTextColor={colors.inkSubtle} />
 
-        <Text style={s.label}>Password</Text>
-        <TextInput style={s.input} value={password} onChangeText={setPassword} secureTextEntry
-          autoComplete="password" placeholder="Password" placeholderTextColor={colors.inkSubtle} />
+            <Text style={s.label}>Password</Text>
+            <TextInput style={s.input} value={password} onChangeText={setPassword} secureTextEntry
+              autoComplete="password" placeholder="Password" placeholderTextColor={colors.inkSubtle} />
 
-        {!!error && <Text style={s.error}>{error}</Text>}
+            {!!error && <Text style={s.error}>{error}</Text>}
 
-        <Pressable onPress={submit} disabled={busy || !phone || !password}
-          style={[s.button, (busy || !phone || !password) && { opacity: 0.5 }]}>
-          <Text style={s.buttonText}>{busy ? "Signing in…" : "Sign in"}</Text>
-        </Pressable>
+            <Pressable onPress={signIn} disabled={busy || !phone || !password}
+              style={[s.button, (busy || !phone || !password) && { opacity: 0.5 }]}>
+              <Text style={s.buttonText}>{busy ? "Signing in…" : "Sign in"}</Text>
+            </Pressable>
 
-        <Pressable onPress={() => router.push("/register")} style={{ marginTop: 16, alignItems: "center" }}>
-          <Text style={{ color: colors.navy, fontSize: 13, fontWeight: "600" }}>New here? Request an account</Text>
-        </Pressable>
+            <Pressable onPress={() => router.push("/register")} style={{ marginTop: 16, alignItems: "center" }}>
+              <Text style={{ color: colors.navy, fontSize: 13, fontWeight: "600" }}>New here? Request an account</Text>
+            </Pressable>
+          </>
+        ) : (
+          <>
+            <Text style={[s.sub, { marginBottom: 12 }]}>Several students use this number. Who is signing in?</Text>
+            {studentPick.studentOptions.map((opt) => (
+              <Pressable key={opt.userId} onPress={() => confirmStudent(opt.userId)} disabled={busy}
+                style={[s.studentBtn, busy && { opacity: 0.6 }]}>
+                <Text style={{ fontWeight: "700", color: colors.ink }}>{opt.name}</Text>
+                <Text style={{ fontSize: 12, color: colors.inkMuted }}>
+                  {[opt.schoolName, opt.classLabel].filter(Boolean).join(" · ")}
+                </Text>
+              </Pressable>
+            ))}
+            <Pressable onPress={() => setStudentPick(null)} style={{ marginTop: 12 }}>
+              <Text style={{ textAlign: "center", color: colors.inkMuted, fontSize: 13 }}>Back</Text>
+            </Pressable>
+            {!!error && <Text style={s.error}>{error}</Text>}
+          </>
+        )}
+
+        {__DEV__ && (
+          <Text style={{ marginTop: 20, fontSize: 10, color: colors.inkSubtle, textAlign: "center" }}>
+            API: {API_BASE_URL}
+          </Text>
+        )}
       </View>
     </KeyboardAvoidingView>
   );
 }
 
 const s = StyleSheet.create({
-  page: { flex: 1, backgroundColor: colors.canvas, justifyContent: "center", padding: 20 },
+  page: { flex: 1, backgroundColor: colors.canvas, justifyContent: "center", padding: 24 },
   card: { backgroundColor: colors.white, borderRadius: 16, padding: 24, borderWidth: 1, borderColor: colors.line },
-  brand: { fontSize: 28, fontWeight: "700", color: colors.navy },
-  sub: { fontSize: 14, color: colors.inkMuted, marginTop: 4, marginBottom: 20 },
-  label: { fontSize: 12, fontWeight: "600", color: colors.inkMuted, marginBottom: 6, marginTop: 10 },
-  input: { borderWidth: 1, borderColor: colors.line, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 11,
-    fontSize: 15, color: colors.ink, backgroundColor: colors.canvas },
-  error: { marginTop: 12, padding: 10, borderRadius: 8, backgroundColor: colors.dangerSoft, color: colors.danger, fontSize: 13 },
-  button: { marginTop: 20, backgroundColor: colors.navy, borderRadius: 10, paddingVertical: 13, alignItems: "center" },
-  buttonText: { color: colors.white, fontWeight: "600", fontSize: 15 },
+  brand: { fontSize: 26, fontWeight: "800", color: colors.ink, textAlign: "center" },
+  sub: { fontSize: 14, color: colors.inkMuted, textAlign: "center", marginTop: 4, marginBottom: 20 },
+  label: { fontSize: 11, fontWeight: "600", color: colors.inkSubtle, marginBottom: 4, textTransform: "uppercase" },
+  input: { borderWidth: 1, borderColor: colors.line, borderRadius: 10, padding: 12, marginBottom: 14, fontSize: 15 },
+  button: { backgroundColor: colors.navy, borderRadius: 10, paddingVertical: 14, alignItems: "center", marginTop: 4 },
+  buttonText: { color: colors.white, fontWeight: "700", fontSize: 15 },
+  studentBtn: { borderWidth: 1, borderColor: colors.line, borderRadius: 10, padding: 14, marginBottom: 8, backgroundColor: colors.canvas },
+  error: { color: colors.danger, fontSize: 13, marginTop: 8 },
 });

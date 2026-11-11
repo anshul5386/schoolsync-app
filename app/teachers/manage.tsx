@@ -202,7 +202,7 @@ export default function TeacherManagementScreen() {
                           backgroundColor: row.canWrite !== false ? colors.navy : colors.white }}>
                           {row.canWrite !== false && <Text style={{ color: colors.white, fontSize: 12, fontWeight: "700" }}>✓</Text>}
                         </View>
-                        <Text style={{ fontSize: 13, color: colors.inkMuted }}>Can write</Text>
+                        <Text style={{ fontSize: 13, color: colors.inkMuted }}>Can enter marks & assignments</Text>
                       </Pressable>
                       <Button small variant="danger" onPress={() => removeRow(index)}>Remove</Button>
                     </Row>

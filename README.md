@@ -11,8 +11,20 @@ login and the same endpoints as the website (`schoolsync-web`). Backend addition
 1. Install Node 20+ and the **Expo Go** app on your phone.
 2. `npm install`
 3. `npx expo install --fix`   (aligns package versions with the installed Expo SDK)
-4. (Optional) The app talks to the production API by default. To use another API, `cp .env.example .env` and set `EXPO_PUBLIC_API_BASE_URL`.
+4. Copy `.env.example` to `.env` and set `EXPO_PUBLIC_API_BASE_URL` (no `/api` suffix).
 5. `npx expo start`, then scan the QR code with Expo Go.
+
+**Internal pilot builds:** see [PILOT_RUNBOOK.md](./PILOT_RUNBOOK.md) and [eas.json](./eas.json) (`eas build --profile preview`).
+
+## API environments
+
+| Use | `EXPO_PUBLIC_API_BASE_URL` |
+|-----|----------------------------|
+| Production (default in code) | `https://schoolsync-api-production.up.railway.app` |
+| Local API on LAN | `http://YOUR_LAN_IP:8080` |
+| Staging | Your Railway/staging host |
+
+The app calls the API **directly** (no `/api` prefix). CORS does not apply to native apps.
 
 ## Layout
 - `app/` screens (file-based routing): `login`, and tabs for assignments, notifications, account

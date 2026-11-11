@@ -1,19 +1,36 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, ReactNode } from "react";
 import * as SecureStore from "expo-secure-store";
 import { TOKEN_KEY, USER_KEY, setUnauthorizedHandler } from "../api/client";
-import { loginWithPassword } from "../api/auth";
+import type { AuthPayload } from "../api/loginAuth";
+import { getProfile } from "../api/profile";
 
-export type User = { userId: string; schoolId: string; role: string; name: string };
+export type User = {
+  userId: string;
+  schoolId: string;
+  role: string;
+  name: string;
+  schoolName?: string;
+};
 
 type AuthState = {
   user: User | null;
-  /** True until the stored session has been read, so the UI never flashes the login screen. */
   loading: boolean;
-  login: (phone: string, password: string) => Promise<void>;
+  applySession: (auth: AuthPayload) => Promise<void>;
+  refreshProfile: () => Promise<void>;
   logout: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthState | null>(null);
+
+function userFromAuth(auth: AuthPayload): User {
+  return {
+    userId: auth.userId,
+    schoolId: auth.schoolId,
+    role: auth.role,
+    name: auth.name,
+    schoolName: auth.schoolName,
+  };
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -25,6 +42,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   }, []);
 
+  const hydrateSchoolName = useCallback(async (u: User): Promise<User> => {
+    if (!u.schoolId || u.schoolName || u.role === "SUPER_ADMIN") return u;
+    try {
+      const res = await getProfile();
+      const schoolName = res.data?.data?.schoolName;
+      if (!schoolName) return u;
+      return { ...u, schoolName };
+    } catch {
+      return u;
+    }
+  }, []);
+
+  const persistUser = useCallback(async (auth: AuthPayload) => {
+    let u = userFromAuth(auth);
+    u = await hydrateSchoolName(u);
+    await SecureStore.setItemAsync(TOKEN_KEY, auth.token);
+    await SecureStore.setItemAsync(USER_KEY, JSON.stringify(u));
+    setUser(u);
+  }, [hydrateSchoolName]);
+
   useEffect(() => {
     (async () => {
       try {
@@ -32,7 +69,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           SecureStore.getItemAsync(TOKEN_KEY),
           SecureStore.getItemAsync(USER_KEY),
         ]);
-        if (token && stored) setUser(JSON.parse(stored));
+        if (token && stored) {
+          const parsed: User = JSON.parse(stored);
+          const hydrated = await hydrateSchoolName(parsed);
+          if (hydrated.schoolName !== parsed.schoolName) {
+            await SecureStore.setItemAsync(USER_KEY, JSON.stringify(hydrated));
+          }
+          setUser(hydrated);
+        }
       } catch {
         await clear();
       } finally {
@@ -41,20 +85,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })();
     setUnauthorizedHandler(() => { clear(); });
     return () => setUnauthorizedHandler(null);
-  }, [clear]);
+  }, [clear, hydrateSchoolName]);
 
-  const login = useCallback(async (phone: string, password: string) => {
-    const res = await loginWithPassword(phone, password);
-    // The web reads the auth payload from res.data.data; fall back to res.data for safety.
-    const auth = res.data?.data ?? res.data;
-    if (!auth?.token) throw new Error("Login failed: no token received.");
-    const u: User = { userId: auth.userId, schoolId: auth.schoolId, role: auth.role, name: auth.name };
-    await SecureStore.setItemAsync(TOKEN_KEY, auth.token);
-    await SecureStore.setItemAsync(USER_KEY, JSON.stringify(u));
-    setUser(u);
-  }, []);
+  const applySession = useCallback(async (auth: AuthPayload) => {
+    await persistUser(auth);
+  }, [persistUser]);
 
-  const value = useMemo(() => ({ user, loading, login, logout: clear }), [user, loading, login, clear]);
+  const refreshProfile = useCallback(async () => {
+    if (!user) return;
+    const hydrated = await hydrateSchoolName(user);
+    if (hydrated.schoolName !== user.schoolName) {
+      await SecureStore.setItemAsync(USER_KEY, JSON.stringify(hydrated));
+      setUser(hydrated);
+    }
+  }, [user, hydrateSchoolName]);
+
+  const value = useMemo(
+    () => ({ user, loading, applySession, refreshProfile, logout: clear }),
+    [user, loading, applySession, refreshProfile, clear]
+  );
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 

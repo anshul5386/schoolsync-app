@@ -3,13 +3,13 @@ import { KeyboardAvoidingView, Platform, Text } from "react-native";
 import { Stack, useRouter } from "expo-router";
 import { getSchoolOptions, getSchoolClassOptions, register } from "../src/api/auth";
 import { errorMessage } from "../src/api/client";
-import { Screen, Title, Card, Button, Field, Select, Message } from "../src/ui";
+import { Screen, Title, Card, Button, Field, Select, SearchableSelect, Message, Tabs2 } from "../src/ui";
 import { colors } from "../src/theme";
 
 // Only roles a person may request for themselves; the backend enforces the same list.
 const REQUESTABLE = [
-  { value: "TEACHER", label: "Teacher" },
-  { value: "STUDENT", label: "Student" },
+  { value: "TEACHER", label: "Teacher", hint: "Your mobile number must be unique." },
+  { value: "STUDENT", label: "Student", hint: "Same mobile is fine for siblings — register each child with name and class." },
 ];
 
 export default function RegisterScreen() {
@@ -83,8 +83,8 @@ export default function RegisterScreen() {
         {header}
         <Card title="Request submitted">
           <Text style={{ fontSize: 14, color: colors.inkMuted, lineHeight: 20 }}>
-            An administrator at {selected?.name} will review your request. Once approved you can sign in with the
-            phone number and password you just chose — nothing else to set up.
+            An administrator at {selected?.name} will review your request.
+            {isStudent ? " Register each sibling separately with the same mobile if needed." : ""}
           </Text>
           <Button onPress={() => router.replace("/login")}>Back to sign in</Button>
         </Card>
@@ -96,19 +96,24 @@ export default function RegisterScreen() {
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <Screen>
         {header}
-        <Title sub="Choose your school and submit a request. An administrator there approves it.">Request an account</Title>
+        <Title sub="Choose teacher or student registration">Request an account</Title>
+        <Tabs2 tabs={REQUESTABLE.map((r) => ({ value: r.value, label: r.label }))} value={form.requestedRole}
+          onChange={(v) => { setForm((f) => ({ ...f, requestedRole: v })); setClassSectionId(""); }} />
+        <Text style={{ fontSize: 12, color: colors.inkSubtle, marginBottom: 4 }}>
+          {REQUESTABLE.find((r) => r.value === form.requestedRole)?.hint}
+        </Text>
         <Card style={{ gap: 14 }}>
-          <Select label="Your school" value={schoolId} onChange={setSchoolId} options={schoolOptions} placeholder="Select your school" />
+          <SearchableSelect label="Your school" value={schoolId} onChange={setSchoolId} options={schoolOptions}
+            placeholder="Select your school" searchPlaceholder="Search by name or city" />
           <Field label="Full name" value={form.name} onChangeText={set("name")} />
           <Field label="Phone" value={form.phone} onChangeText={set("phone")} keyboardType="phone-pad" placeholder="10 digits" />
           <Field label="Email (optional)" value={form.email} onChangeText={set("email")} keyboardType="email-address" autoCapitalize="none" />
-          <Select label="Joining as" value={form.requestedRole} onChange={set("requestedRole")} options={REQUESTABLE} />
 
           {isStudent && (
             !schoolId ? <Text style={{ fontSize: 12, color: colors.inkSubtle }}>Choose your school first.</Text>
             : classesLoading ? <Text style={{ fontSize: 12, color: colors.inkSubtle }}>Loading classes…</Text>
             : classOptions.length === 0 ? <Text style={{ fontSize: 12, color: colors.inkSubtle }}>This school has not added its classes yet. Contact them directly.</Text>
-            : <Select label="Class" value={classSectionId} onChange={setClassSectionId} options={classOptions} placeholder="Select your class" />
+            : <SearchableSelect label="Class" value={classSectionId} onChange={setClassSectionId} options={classOptions} placeholder="Select your class" />
           )}
 
           <Field label="Choose a password" value={form.password} onChangeText={set("password")} secureTextEntry

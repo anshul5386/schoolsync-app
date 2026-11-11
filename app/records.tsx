@@ -364,7 +364,7 @@ function RecordsInner({ role }: { role: string }) {
   };
 
   const setMark = (studentId: string, patch: Partial<Mark>) =>
-    setMarks((m) => ({ ...m, [studentId]: { marks: "", grade: "", ...(m[studentId] || {}), ...patch } }));
+    setMarks((m) => ({ ...m, [studentId]: { ...(m[studentId] || { marks: "", grade: "" }), ...patch } }));
 
   const classOptions: Option[] = (classes.data || []).map((c) => ({ value: c.id, label: classLabelOf(c) }));
   const subjectSelectOptions: Option[] = subjectOptions.map((n) => ({ value: n, label: n }));

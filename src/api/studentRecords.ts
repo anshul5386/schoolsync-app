@@ -13,3 +13,5 @@ export type Assignment = {
 
 /** The server resolves the class from the caller's own student record; there is no class param. */
 export const getMyAssignments = () => api.get("/student/records/assignments");
+
+export const getMyExamResults = () => api.get("/student/records/exam-results");

@@ -18,3 +18,6 @@ export const createUser = (payload: CreateUserPayload) => api.post("/super-admin
 
 export const activateUser = (id: string) => api.post(`/super-admin/users/${id}/activate`);
 export const deactivateUser = (id: string) => api.post(`/super-admin/users/${id}/deactivate`);
+
+export const resetSuperAdminUserPassword = (userId: string, newPassword: string) =>
+  api.post(`/super-admin/users/${userId}/reset-password`, { newPassword });
