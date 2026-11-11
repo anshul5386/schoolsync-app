@@ -14,7 +14,7 @@ login and the same endpoints as the website (`schoolsync-web`). Backend addition
 4. Copy `.env.example` to `.env` and set `EXPO_PUBLIC_API_BASE_URL` (no `/api` suffix).
 5. `npx expo start`, then scan the QR code with Expo Go.
 
-**Internal pilot builds:** see [PILOT_RUNBOOK.md](./PILOT_RUNBOOK.md) and [eas.json](./eas.json) (`eas build --profile preview`).
+**Internal pilot builds:** see [PILOT_RUNBOOK.md](./PILOT_RUNBOOK.md) and [eas.json](./eas.json). Use profile **`preview`** or **`pilot`** for a installable **APK** + install QR on expo.dev. **production** builds **AAB** for Play Store only.
 
 ### Link Expo (required once for EAS / GitHub builds)
 

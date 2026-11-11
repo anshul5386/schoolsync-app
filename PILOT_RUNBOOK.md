@@ -8,7 +8,28 @@ Cloud builds **fail** until `app.json` contains Expo `projectId`. Warnings about
 2. **Projects** → open **Easool** (or **Create** → name Easool, slug `easool`).
 3. **Project settings** → copy **Project ID** (UUID like `a1b2c3d4-...`).
 4. GitHub app or mobile browser → **schoolsync-app** → edit `app.json` → add `owner` + `extra.eas.projectId` (see README), commit to the branch EAS builds from.
-5. Expo → **Builds** → run **preview** Android APK again → install link on phone.
+5. Expo → **Builds** → profile **`preview`** or **`pilot`** (not **production**) → Android → install link on phone.
+
+### APK vs AAB
+
+| Profile | Android output | Install on phone directly? |
+|---------|----------------|----------------------------|
+| **preview** / **pilot** | **APK** | Yes — download `.apk` or scan install QR |
+| **production** | **AAB** (`.aab`) | No — for Play Store only (use [internal testing](https://play.google.com/console) or build **preview** instead) |
+
+If you only see **`.aab`**, you built **production**. Start a new build and pick **preview** or **pilot**.
+
+### Install QR (no laptop)
+
+`eas.json` does **not** create an Expo Go dev QR (that needs `expo start` on a computer).
+
+For **pilot/preview** builds with `"distribution": "internal"`, Expo shows an **install QR** on the phone:
+
+1. [expo.dev](https://expo.dev) → your project → **Builds** → open the green build.
+2. Tap **Install** (or **Open with Orbit** / share link).
+3. Scan the **QR** with the phone camera — it opens the APK install page (Android).
+
+Share that same link/QR with testers; they do not need Expo Go.
 
 ## Prerequisites
 
