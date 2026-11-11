@@ -6,20 +6,15 @@
     "version": "0.1.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
-    "plugins": [
-      "expo-router",
-      "expo-secure-store",
-      "expo-asset"
-    ],
-    "experiments": {
-      "typedRoutes": true
-    },
-    "ios": {
-      "bundleIdentifier": "in.easool.app",
-      "supportsTablet": true
-    },
-    "android": {
-      "package": "in.easool.app"
+    "owner": "anshuleasools-team",
+    "plugins": ["expo-router", "expo-secure-store"],
+    "experiments": { "typedRoutes": true },
+    "ios": { "bundleIdentifier": "in.easool.app", "supportsTablet": true },
+    "android": { "package": "in.easool.app" },
+    "extra": {
+      "eas": {
+        "projectId": "b3d23a79-831a-4c13-a2c3-7cefc5aec95c"
+      }
     }
   }
 }
