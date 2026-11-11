@@ -12,6 +12,7 @@
       }
     },
     "preview": {
+      "node": "22.11.0",
       "distribution": "internal",
       "android": {
         "buildType": "apk"
@@ -20,7 +21,8 @@
         "simulator": false
       },
       "env": {
-        "EXPO_PUBLIC_API_BASE_URL": "https://schoolsync-api-production.up.railway.app"
+        "EXPO_PUBLIC_API_BASE_URL": "https://schoolsync-api-production.up.railway.app",
+        "EAS_BUILD_NO_EXPO_GO_WARNING": "true"
       }
     },
     "production": {

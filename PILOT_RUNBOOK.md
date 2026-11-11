@@ -1,8 +1,18 @@
 # Easool mobile — internal pilot runbook
 
+## EAS cloud build (GitHub / no laptop)
+
+Cloud builds **fail** until `app.json` contains Expo `projectId`. Warnings about Node 20 or Expo Go are safe to ignore once `projectId` is set.
+
+1. Phone browser → [expo.dev](https://expo.dev) → sign in as **anshuleasools-team**.
+2. **Projects** → open **Easool** (or **Create** → name Easool, slug `easool`).
+3. **Project settings** → copy **Project ID** (UUID like `a1b2c3d4-...`).
+4. GitHub app or mobile browser → **schoolsync-app** → edit `app.json` → add `owner` + `extra.eas.projectId` (see README), commit to the branch EAS builds from.
+5. Expo → **Builds** → run **preview** Android APK again → install link on phone.
+
 ## Prerequisites
 
-- Node 20+
+- Node 20+ (22 recommended for future EAS CLI)
 - Expo account (`npx eas login`)
 - EAS CLI (`npm i -g eas-cli`)
 - Backend deployed with v1.1 APIs (`feature/login-timetable` or production)
