@@ -16,6 +16,21 @@ login and the same endpoints as the website (`schoolsync-web`). Backend addition
 
 **Internal pilot builds:** see [PILOT_RUNBOOK.md](./PILOT_RUNBOOK.md) and [eas.json](./eas.json) (`eas build --profile preview`).
 
+### Link Expo (required once for EAS / GitHub builds)
+
+After creating the app on [expo.dev](https://expo.dev) under **anshuleasools-team**, add to `app.json` inside `"expo"`:
+
+```json
+"owner": "anshuleasools-team",
+"extra": {
+  "eas": {
+    "projectId": "PASTE-PROJECT-UUID-FROM-EXPO-DASHBOARD"
+  }
+}
+```
+
+Commit and push. Re-run the cloud build without this, builds stop with `extra.eas.projectId field is missing`.
+
 ## API environments
 
 | Use | `EXPO_PUBLIC_API_BASE_URL` |
