@@ -72,9 +72,9 @@ export default function LoginScreen() {
 
         {!studentPick ? (
           <>
-            <Text style={s.label}>Phone number</Text>
-            <TextInput style={s.input} value={phone} onChangeText={setPhone} keyboardType="phone-pad"
-              autoComplete="tel" placeholder="10-digit mobile number" placeholderTextColor={colors.inkSubtle} />
+            <Text style={s.label}>UserName</Text>
+            <TextInput style={s.input} value={phone} onChangeText={setPhone} keyboardType="default"
+              autoCapitalize="characters" autoComplete="username" placeholder="QA-SCH-001-STU-0001" placeholderTextColor={colors.inkSubtle} />
 
             <Text style={s.label}>Password</Text>
             <TextInput style={s.input} value={password} onChangeText={setPassword} secureTextEntry

@@ -3,7 +3,7 @@ import { Text, TextInput, View } from "react-native";
 import { Stack } from "expo-router";
 import { getMyClasses } from "../src/api/classes";
 import { getSchoolTeachers } from "../src/api/schoolTeachers";
-import { getSchoolStudents, updateRollNumber, resetSchoolUserPassword } from "../src/api/schoolDirectory";
+import { getSchoolStudents, updateRollNumber, updateStudentGuardian, resetSchoolUserPassword } from "../src/api/schoolDirectory";
 import { errorMessage } from "../src/api/client";
 import { useAuth } from "../src/auth/AuthContext";
 import { useLoad, unwrap } from "../src/lib/useLoad";
@@ -20,6 +20,11 @@ export default function DirectoryScreen() {
   const [message, setMessage] = useState<Msg>(null);
   const [resetFor, setResetFor] = useState<string | null>(null);
   const [newPassword, setNewPassword] = useState("");
+  const [guardianFor, setGuardianFor] = useState<any | null>(null);
+  const [guardianForm, setGuardianForm] = useState({
+    fatherPhone: "", fatherName: "", motherPhone: "", motherName: "",
+    guardianPhone: "", guardianName: "",
+  });
 
   const setup = useLoad(async () => {
     const [c, t] = await Promise.all([getMyClasses(), getSchoolTeachers()]);
@@ -44,6 +49,18 @@ export default function DirectoryScreen() {
       await studentsQ.reload();
     } catch (err) {
       setMessage({ type: "error", text: errorMessage(err, "Update failed.") });
+    }
+  };
+
+  const submitGuardian = async () => {
+    if (!guardianFor) return;
+    try {
+      await updateStudentGuardian(guardianFor.studentId, guardianForm);
+      setMessage({ type: "success", text: "Parent contact saved." });
+      setGuardianFor(null);
+      await studentsQ.reload();
+    } catch (err) {
+      setMessage({ type: "error", text: errorMessage(err, "Save failed.") });
     }
   };
 
@@ -82,8 +99,21 @@ export default function DirectoryScreen() {
           {studentsQ.loading ? <Loading /> : students.length === 0 ? <Empty>No students found.</Empty> : students.map((s) => (
             <Card key={s.studentId}>
               <Text style={{ fontWeight: "700", color: colors.ink }}>{s.name}</Text>
-              <Text style={{ fontSize: 12, color: colors.inkMuted }}>{s.classLabel} · {s.phone}</Text>
-              <Row style={{ alignItems: "center", marginTop: 8, gap: 8 }}>
+              <Text style={{ fontSize: 12, color: colors.inkMuted }}>
+                {s.classLabel} · UserName {s.username || s.userId} · {s.phone}
+              </Text>
+              <Row style={{ alignItems: "center", marginTop: 8, gap: 8, flexWrap: "wrap" }}>
+                <Button small variant="secondary" onPress={() => {
+                  setGuardianFor(s);
+                  setGuardianForm({
+                    fatherName: s.fatherName || "",
+                    fatherPhone: s.fatherPhone || "",
+                    motherName: s.motherName || "",
+                    motherPhone: s.motherPhone || "",
+                    guardianName: s.guardianName || "",
+                    guardianPhone: s.guardianPhone || "",
+                  });
+                }}>Parent phone</Button>
                 <Text style={{ fontSize: 12, color: colors.inkSubtle }}>Roll</Text>
                 <TextInput defaultValue={String(s.rollNumber)} keyboardType="number-pad"
                   onEndEditing={(e) => saveRoll(s.studentId, e.nativeEvent.text)}
@@ -115,6 +145,21 @@ export default function DirectoryScreen() {
             </Row>
           </Card>
         ))
+      )}
+
+      {guardianFor && (
+        <Card title={`Parent — ${guardianFor.name}`}>
+          <Field label="Father name" value={guardianForm.fatherName} onChangeText={(v) => setGuardianForm((f) => ({ ...f, fatherName: v }))} />
+          <Field label="Father phone" value={guardianForm.fatherPhone} onChangeText={(v) => setGuardianForm((f) => ({ ...f, fatherPhone: v }))} keyboardType="phone-pad" />
+          <Field label="Mother name" value={guardianForm.motherName} onChangeText={(v) => setGuardianForm((f) => ({ ...f, motherName: v }))} />
+          <Field label="Mother phone" value={guardianForm.motherPhone} onChangeText={(v) => setGuardianForm((f) => ({ ...f, motherPhone: v }))} keyboardType="phone-pad" />
+          <Field label="Guardian name" value={guardianForm.guardianName} onChangeText={(v) => setGuardianForm((f) => ({ ...f, guardianName: v }))} />
+          <Field label="Guardian phone" value={guardianForm.guardianPhone} onChangeText={(v) => setGuardianForm((f) => ({ ...f, guardianPhone: v }))} keyboardType="phone-pad" />
+          <Row>
+            <View style={{ flex: 1 }}><Button onPress={submitGuardian}>Save</Button></View>
+            <View style={{ flex: 1 }}><Button variant="secondary" onPress={() => setGuardianFor(null)}>Cancel</Button></View>
+          </Row>
+        </Card>
       )}
 
       {resetFor && (

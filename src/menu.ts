@@ -30,6 +30,7 @@ export const MENU: MenuItem[] = [
   { path: "/teacher-calendar", title: "Teacher calendar", desc: "Who teaches when", roles: ["PRINCIPAL", "COORDINATOR"] },
   { path: "/substitution", title: "Substitution", desc: "Cover absent teachers", roles: ["PRINCIPAL", "COORDINATOR"] },
   { path: "/directory", title: "Directory", desc: "Students and teachers", roles: ["PRINCIPAL", "SCHOOL_ADMIN", "COORDINATOR"] },
+  { path: "/whatsapp-reports", title: "WhatsApp", desc: "Parent alerts and reports", roles: ["PRINCIPAL", "SCHOOL_ADMIN", "COORDINATOR"] },
   { path: "/records", title: "Records", desc: "Assignments, exams and results", roles: RECORDS_ROLES },
   { path: "/lesson-plans", title: "Lesson plans", desc: "Class lesson plans", roles: LESSON_ROLES },
   { path: "/approvals", title: "Account requests", desc: "Approve new accounts", roles: ["PRINCIPAL", "SCHOOL_ADMIN"] },

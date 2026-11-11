@@ -40,7 +40,7 @@ export default function CreateUserScreen() {
     try {
       const res = await createUser({ ...form, email: form.email || null });
       const created = unwrap<any>(res);
-      setMsg({ type: "success", text: `Created ${created.name} as ${created.role}. They can sign in with their phone and the password you set.` });
+      setMsg({ type: "success", text: `Created ${created.name} as ${created.role}. UserName: ${created.username || "—"}.` });
       setForm((f) => ({ ...f, name: "", phone: "", email: "", password: "" }));
     } catch (err) {
       setMsg({ type: "error", text: errorMessage(err, "Could not create the user.") });

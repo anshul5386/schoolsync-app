@@ -91,7 +91,9 @@ export default function UsersScreen() {
             <Chip tone={u.active ? "green" : "grey"}>{u.active ? "Active" : "Disabled"}</Chip>
           </Row>
           {!!u.email && <Text style={{ fontSize: 11, color: colors.inkSubtle }}>{u.email}</Text>}
-          <Text style={{ fontSize: 12, color: colors.inkMuted }}>{u.phone} · {u.schoolName || "—"}</Text>
+          <Text style={{ fontSize: 12, color: colors.inkMuted }}>
+            UserName {u.username || "—"} · {u.phone} · {u.schoolName || "—"}
+          </Text>
           <Chip tone="grey">{u.role}</Chip>
           <Button small variant="secondary" busy={busyId === u.id} onPress={() => toggleActive(u)}>
             {u.active ? "Disable" : "Enable"}

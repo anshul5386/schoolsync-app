@@ -45,7 +45,7 @@ export default function SchoolsScreen() {
         <Card key={s.id}>
           <Row style={{ justifyContent: "space-between" }}>
             <Text style={{ flex: 1, fontSize: 15, fontWeight: "700", color: colors.ink }}>{s.name}</Text>
-            <Chip tone={s.active ? "green" : "grey"}>{s.active ? "Active" : "Inactive"}</Chip>
+            <Chip tone={s.active ? "green" : "grey"}>{s.active ? "Active" : "Suspended"}</Chip>
           </Row>
           <Text style={{ fontSize: 11, color: colors.inkSubtle }}>
             {s.subdomain}{s.city ? ` · ${s.city}` : ""}{s.state ? `, ${s.state}` : ""}

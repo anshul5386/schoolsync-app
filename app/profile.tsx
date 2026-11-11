@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Text } from "react-native";
 import { Stack } from "expo-router";
 import { getProfile } from "../src/api/profile";
+import { getWhatsappSettings } from "../src/api/whatsapp";
 import { errorMessage } from "../src/api/client";
 import { useAuth } from "../src/auth/AuthContext";
 import { unwrap } from "../src/lib/useLoad";
@@ -22,6 +23,7 @@ function Item({ label, value, mono }: { label: string; value?: string; mono?: bo
 export default function ProfileScreen() {
   const { user, refreshProfile } = useAuth();
   const [profile, setProfile] = useState<any>(null);
+  const [whatsapp, setWhatsapp] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -31,6 +33,12 @@ export default function ProfileScreen() {
     try {
       const res = await getProfile();
       setProfile(unwrap(res));
+      try {
+        const wa = await getWhatsappSettings();
+        setWhatsapp(unwrap(wa));
+      } catch {
+        setWhatsapp(null);
+      }
       await refreshProfile();
     } catch (e) {
       setError(errorMessage(e, "Could not load profile."));
@@ -77,6 +85,9 @@ export default function ProfileScreen() {
           <Card title="App">
             <Item label="API" value={API_BASE_URL} mono />
             <Item label="Version" value="1.1.0-pilot" />
+            <Item label="WhatsApp" value={
+              whatsapp?.whatsappEnabled ? "Enabled for your school" : "Off — enable in Menu → WhatsApp"
+            } />
           </Card>
         </>
       )}
