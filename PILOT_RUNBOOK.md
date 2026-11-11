@@ -10,6 +10,28 @@ Cloud builds **fail** until `app.json` contains Expo `projectId`. Warnings about
 4. GitHub app or mobile browser → **schoolsync-app** → edit `app.json` → add `owner` + `extra.eas.projectId` (see README), commit to the branch EAS builds from.
 5. Expo → **Builds** → profile **`preview`** or **`pilot`** (not **production**) → Android → install link on phone.
 
+## Development build (custom “Easool” dev app, not Expo Go)
+
+Per [Expo development builds](https://docs.expo.dev/develop/development-builds/introduction/): a **development build** is your own app shell (with `expo-dev-client`) that can load JavaScript from a **development server** (QR / Metro), like a private Expo Go with your native modules (`expo-secure-store`, etc.).
+
+**On expo.dev (phone only, after GitHub has `expo-dev-client` + updated `eas.json`):**
+
+1. **Develop & deploy** → **Get started with development builds** (or **Build from GitHub**).
+2. Profile: **`development`** (not production).
+3. Platform: **Android** → wait → **Install** / scan QR → install **APK**.
+4. Open **Easool** on the phone → launcher screen → connect to a dev server (scan QR from `npx expo start`) **or** use **Updates** tab if you publish with EAS Update.
+
+**Important for you (no laptop):**
+
+| Goal | Use |
+|------|-----|
+| Test the app as users see it (production API, no dev server) | **`preview`** / **`pilot`** APK |
+| Develop / reload JS from a computer via QR | **`development`** APK |
+
+A development build **alone** does not load your screens until it connects to Metro or an EAS Update. For daily QA without a Mac, prefer **preview** first; use **development** when someone can run `npx expo start` (or you set up EAS Update).
+
+**After native changes** (new native module, `app.json` plugins): rebuild **development** on Expo.
+
 ### APK vs AAB
 
 | Profile | Android output | Install on phone directly? |
