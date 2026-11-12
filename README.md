@@ -2,6 +2,8 @@
 
 One React Native + Expo (TypeScript) codebase that produces both the Android and the iOS app.
 
+**Expo SDK 53+** is required for **Android 15+ / 16 KB page size** devices (e.g. Samsung Android 17). SDK 52 preview APKs may crash on launch on those phones.
+
 There is **no separate backend**. The app calls the existing `schoolsync-api` with the same JWT
 login and the same endpoints as the website (`schoolsync-web`). Backend additions the app needs
 (push tokens, refresh tokens, account deletion) are made in the `schoolsync` repo, never here.

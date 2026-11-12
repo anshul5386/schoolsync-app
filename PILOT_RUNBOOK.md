@@ -53,6 +53,10 @@ For **pilot/preview** builds with `"distribution": "internal"`, Expo shows an **
 
 Share that same link/QR with testers; they do not need Expo Go.
 
+## Samsung / Android 15+ (16 KB page size)
+
+Preview APKs must be built with **Expo SDK 53.0.14+** (this repo uses SDK 53). Older builds crash on launch on many new Samsung phones (Android 15–17).
+
 ## Prerequisites
 
 - Node 20+ (22 recommended for future EAS CLI)
