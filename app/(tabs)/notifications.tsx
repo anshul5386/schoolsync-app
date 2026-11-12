@@ -5,11 +5,13 @@ import { errorMessage } from "../../src/api/client";
 import { useRouter } from "expo-router";
 import { useAuth } from "../../src/auth/AuthContext";
 import { notificationTarget } from "../../src/notificationTarget";
+import { useListContentStyle } from "../../src/ui";
 import { colors } from "../../src/theme";
 
 export default function NotificationsScreen() {
   const router = useRouter();
   const { user } = useAuth();
+  const listPad = useListContentStyle();
   const [rows, setRows] = useState<AppNotification[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -44,7 +46,7 @@ export default function NotificationsScreen() {
 
   return (
     <FlatList
-      contentContainerStyle={{ padding: 16, gap: 8 }}
+      contentContainerStyle={{ ...listPad, gap: 8 }}
       data={rows}
       keyExtractor={(n) => n.id}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={async () => {

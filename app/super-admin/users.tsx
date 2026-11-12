@@ -5,7 +5,7 @@ import { activateUser, deactivateUser, getAllSchools, getAllUsers, resetSuperAdm
 import { errorMessage } from "../../src/api/client";
 import { useAuth } from "../../src/auth/AuthContext";
 import { useLoad, unwrap } from "../../src/lib/useLoad";
-import { Button, Card, Chip, Empty, Field, Loading, Message, Row, Screen, Select, Title } from "../../src/ui";
+import { Button, Card, Chip, Empty, Field, Loading, Message, PasswordField, Row, Screen, Select, Title } from "../../src/ui";
 import { colors } from "../../src/theme";
 
 const ROLES = ["PRINCIPAL", "SCHOOL_ADMIN", "COORDINATOR", "SUB_COORDINATOR", "TEACHER", "STUDENT"];
@@ -106,7 +106,7 @@ export default function UsersScreen() {
 
       {resetFor && (
         <Card title={`Password for ${resetFor.name}`}>
-          <Field label="New password (min 6)" value={newPassword} onChangeText={setNewPassword} secureTextEntry />
+          <PasswordField label="New password (min 6)" value={newPassword} onChangeText={setNewPassword} />
           <Row>
             <View style={{ flex: 1 }}><Button busy={busyId === resetFor.id} onPress={submitReset}>Save</Button></View>
             <View style={{ flex: 1 }}><Button variant="secondary" onPress={() => setResetFor(null)}>Cancel</Button></View>

@@ -7,14 +7,39 @@ import {
   ActivityIndicator, Modal, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text,
   TextInput, TextInputProps, View, ViewStyle,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { colors } from "../theme";
 
+/** Standard horizontal padding and bottom inset (home indicator / Samsung nav bar). */
+export function useContentPadding(extraBottom = 16) {
+  const insets = useSafeAreaInsets();
+  return {
+    paddingHorizontal: 16,
+    paddingBottom: Math.max(insets.bottom, extraBottom),
+    gap: 12 as const,
+  };
+}
+
+/** For FlatList / manual layouts outside `Screen`. */
+export function useListContentStyle(extraBottom = 16) {
+  const pad = useContentPadding(extraBottom);
+  return { paddingHorizontal: pad.paddingHorizontal, paddingBottom: pad.paddingBottom, gap: 12 };
+}
+
 /** Scrollable page with pull-to-refresh and standard padding. */
-export function Screen({ children, onRefresh, style }: { children: ReactNode; onRefresh?: () => Promise<void> | void; style?: ViewStyle }) {
+export function Screen({ children, onRefresh, style, safeTop }: {
+  children: ReactNode; onRefresh?: () => Promise<void> | void; style?: ViewStyle; safeTop?: boolean;
+}) {
   const [refreshing, setRefreshing] = useState(false);
+  const insets = useSafeAreaInsets();
+  const padding = useContentPadding();
+  const topPad = safeTop ? Math.max(insets.top, 8) : 0;
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: colors.canvas }} contentContainerStyle={[{ padding: 16, gap: 12 }, style]}
+    <ScrollView
+      style={{ flex: 1, backgroundColor: colors.canvas }}
+      contentContainerStyle={[{ paddingTop: topPad, paddingHorizontal: padding.paddingHorizontal,
+        paddingBottom: padding.paddingBottom, gap: padding.gap }, style]}
       keyboardShouldPersistTaps="handled"
       refreshControl={onRefresh ? <RefreshControl refreshing={refreshing} onRefresh={async () => {
         setRefreshing(true); try { await onRefresh(); } finally { setRefreshing(false); }
@@ -76,6 +101,36 @@ export function Field({ label, hint, ...rest }: TextInputProps & { label: string
       <Text style={s.label}>{label}</Text>
       <TextInput placeholderTextColor={colors.inkSubtle} {...rest}
         style={[s.input, rest.multiline && { minHeight: 90, textAlignVertical: "top" }, rest.style]} />
+      {!!hint && <Text style={s.hint}>{hint}</Text>}
+    </View>
+  );
+}
+
+/** Password with show/hide — same UX as professional web login forms. */
+export function PasswordField({ label, hint, ...rest }: TextInputProps & { label: string; hint?: string }) {
+  const [visible, setVisible] = useState(false);
+  return (
+    <View>
+      <Text style={s.label}>{label}</Text>
+      <View style={s.passwordRow}>
+        <TextInput
+          placeholderTextColor={colors.inkSubtle}
+          secureTextEntry={!visible}
+          autoCapitalize="none"
+          autoCorrect={false}
+          {...rest}
+          style={[s.input, s.passwordInput, rest.style]}
+        />
+        <Pressable
+          onPress={() => setVisible((v) => !v)}
+          accessibilityRole="button"
+          accessibilityLabel={visible ? "Hide password" : "Show password"}
+          hitSlop={8}
+          style={s.passwordToggle}
+        >
+          <Text style={s.passwordToggleText}>{visible ? "Hide" : "Show"}</Text>
+        </Pressable>
+      </View>
       {!!hint && <Text style={s.hint}>{hint}</Text>}
     </View>
   );
@@ -251,5 +306,9 @@ const s = StyleSheet.create({
   label: { fontSize: 11, fontWeight: "600", color: colors.inkMuted, marginBottom: 5, textTransform: "uppercase" },
   input: { borderWidth: 1, borderColor: colors.line, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 11,
     fontSize: 15, color: colors.ink, backgroundColor: colors.canvas },
+  passwordRow: { position: "relative" },
+  passwordInput: { paddingRight: 64 },
+  passwordToggle: { position: "absolute", right: 4, top: 4, bottom: 4, justifyContent: "center", paddingHorizontal: 10 },
+  passwordToggleText: { fontSize: 13, fontWeight: "600", color: colors.navy },
   hint: { fontSize: 11, color: colors.inkSubtle, marginTop: 4 },
 });

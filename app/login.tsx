@@ -1,6 +1,8 @@
 import { useState } from "react";
-import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+import { PasswordField } from "../src/ui";
 import { useAuth } from "../src/auth/AuthContext";
 import { loginWithPassword, selectStudent } from "../src/api/auth";
 import { extractLoginPayload, loginErrorMessage, type StudentLoginOption } from "../src/api/loginAuth";
@@ -65,7 +67,9 @@ export default function LoginScreen() {
   };
 
   return (
-    <KeyboardAvoidingView style={s.page} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+    <SafeAreaView style={s.page} edges={["top", "bottom", "left", "right"]}>
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+      <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled">
       <View style={s.card}>
         <Text style={s.brand}>Easool</Text>
         <Text style={s.sub}>Sign in to your school account</Text>
@@ -76,9 +80,8 @@ export default function LoginScreen() {
             <TextInput style={s.input} value={phone} onChangeText={setPhone} keyboardType="default"
               autoCapitalize="characters" autoComplete="username" placeholder="QA-SCH-001-STU-0001" placeholderTextColor={colors.inkSubtle} />
 
-            <Text style={s.label}>Password</Text>
-            <TextInput style={s.input} value={password} onChangeText={setPassword} secureTextEntry
-              autoComplete="password" placeholder="Password" placeholderTextColor={colors.inkSubtle} />
+            <PasswordField label="Password" value={password} onChangeText={setPassword}
+              autoComplete="password" placeholder="Password" hint="Tap Show to check what you typed" />
 
             {!!error && <Text style={s.error}>{error}</Text>}
 
@@ -116,12 +119,15 @@ export default function LoginScreen() {
           </Text>
         )}
       </View>
+      </ScrollView>
     </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
 const s = StyleSheet.create({
-  page: { flex: 1, backgroundColor: colors.canvas, justifyContent: "center", padding: 24 },
+  page: { flex: 1, backgroundColor: colors.canvas },
+  scroll: { flexGrow: 1, justifyContent: "center", padding: 24, paddingVertical: 32 },
   card: { backgroundColor: colors.white, borderRadius: 16, padding: 24, borderWidth: 1, borderColor: colors.line },
   brand: { fontSize: 26, fontWeight: "800", color: colors.ink, textAlign: "center" },
   sub: { fontSize: 14, color: colors.inkMuted, textAlign: "center", marginTop: 4, marginBottom: 20 },
