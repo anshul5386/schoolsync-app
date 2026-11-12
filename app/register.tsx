@@ -3,7 +3,7 @@ import { KeyboardAvoidingView, Platform, Text } from "react-native";
 import { Stack, useRouter } from "expo-router";
 import { getSchoolOptions, getSchoolClassOptions, register } from "../src/api/auth";
 import { errorMessage } from "../src/api/client";
-import { Screen, Title, Card, Button, Field, Select, SearchableSelect, Message, Tabs2 } from "../src/ui";
+import { Screen, Title, Card, Button, Field, PasswordField, Select, SearchableSelect, Message, Tabs2 } from "../src/ui";
 import { colors } from "../src/theme";
 
 // Only roles a person may request for themselves; the backend enforces the same list.
@@ -116,7 +116,7 @@ export default function RegisterScreen() {
             : <SearchableSelect label="Class" value={classSectionId} onChange={setClassSectionId} options={classOptions} placeholder="Select your class" />
           )}
 
-          <Field label="Choose a password" value={form.password} onChangeText={set("password")} secureTextEntry
+          <PasswordField label="Choose a password" value={form.password} onChangeText={set("password")}
             placeholder="At least 6 characters" hint="You will use this to sign in as soon as your request is approved." />
 
           <Message m={error ? { type: "error", text: error } : null} />

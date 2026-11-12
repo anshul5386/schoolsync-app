@@ -3,6 +3,7 @@ import { ActivityIndicator, View } from "react-native";
 import { Stack, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { QueryClientProvider } from "@tanstack/react-query";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 import { AuthProvider, useAuth } from "../src/auth/AuthContext";
 import { queryClient } from "../src/queryClient";
 import { colors } from "../src/theme";
@@ -39,8 +40,15 @@ function Gate() {
     );
   }
   return (
-    <Stack screenOptions={{ headerStyle: { backgroundColor: colors.white }, headerTitleStyle: { color: colors.ink },
-      headerTintColor: colors.navy, headerBackTitle: "Back", contentStyle: { backgroundColor: colors.canvas } }}>
+    <Stack screenOptions={{
+      headerStyle: { backgroundColor: colors.white },
+      headerTitleStyle: { color: colors.ink },
+      headerTintColor: colors.navy,
+      headerBackTitle: "Back",
+      headerShadowVisible: true,
+      contentStyle: { backgroundColor: colors.canvas },
+      animation: "slide_from_right",
+    }}>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="login" options={{ headerShown: false }} />
     </Stack>
@@ -49,11 +57,13 @@ function Gate() {
 
 export default function RootLayout() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <StatusBar style="dark" />
-        <Gate />
-      </AuthProvider>
-    </QueryClientProvider>
+    <SafeAreaProvider>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <StatusBar style="dark" translucent={false} backgroundColor={colors.canvas} />
+          <Gate />
+        </AuthProvider>
+      </QueryClientProvider>
+    </SafeAreaProvider>
   );
 }

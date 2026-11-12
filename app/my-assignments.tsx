@@ -6,11 +6,13 @@ import { errorMessage } from "../src/api/client";
 import { useAuth } from "../src/auth/AuthContext";
 import AssignmentDetailModal from "../src/components/AssignmentDetailModal";
 import AttachmentBar from "../src/components/AttachmentBar";
+import { useListContentStyle } from "../src/ui";
 import { colors } from "../src/theme";
 
 /** First real screen: a student's assignments. Other roles get their screens in later PRs. */
 export default function AssignmentsScreen() {
   const { user } = useAuth();
+  const listPad = useListContentStyle();
   const router = useRouter();
   const { highlight } = useLocalSearchParams<{ highlight?: string }>();
   const [rows, setRows] = useState<Assignment[]>([]);
@@ -54,7 +56,7 @@ export default function AssignmentsScreen() {
   return (
     <>
       <FlatList
-        contentContainerStyle={{ padding: 16, gap: 10 }}
+        contentContainerStyle={{ ...listPad, gap: 10 }}
         data={rows}
         keyExtractor={(a) => a.id}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={async () => {

@@ -7,7 +7,7 @@ import { getSchoolStudents, updateRollNumber, updateStudentGuardian, resetSchool
 import { errorMessage } from "../src/api/client";
 import { useAuth } from "../src/auth/AuthContext";
 import { useLoad, unwrap } from "../src/lib/useLoad";
-import { Button, Card, Empty, Field, Loading, Message, Row, Screen, Select, Tabs2, Title, confirm } from "../src/ui";
+import { Button, Card, Empty, Field, Loading, Message, PasswordField, Row, Screen, Select, Tabs2, Title, confirm } from "../src/ui";
 import { colors } from "../src/theme";
 
 type Msg = { type: "success" | "error"; text: string } | null;
@@ -164,7 +164,7 @@ export default function DirectoryScreen() {
 
       {resetFor && (
         <Card title="Set new password">
-          <Field label="New password (min 6)" value={newPassword} onChangeText={setNewPassword} secureTextEntry />
+          <PasswordField label="New password (min 6)" value={newPassword} onChangeText={setNewPassword} />
           <Row>
             <View style={{ flex: 1 }}><Button onPress={submitReset}>Save</Button></View>
             <View style={{ flex: 1 }}><Button variant="secondary" onPress={() => setResetFor(null)}>Cancel</Button></View>

@@ -5,7 +5,7 @@ import { getNotices, publishNotice, pinNotice, unpinNotice, withdrawNotice, Noti
 import { getMyClasses, ClassSection } from "../../src/api/classes";
 import { errorMessage } from "../../src/api/client";
 import { useAuth } from "../../src/auth/AuthContext";
-import { Button, Card, Chip, DateField, Field, Loading, Message, Row, Select, Tabs2, Title, confirm, pretty } from "../../src/ui";
+import { Button, Card, Chip, DateField, Field, Loading, Message, Row, Select, Tabs2, Title, confirm, pretty, useListContentStyle } from "../../src/ui";
 import { CATEGORY_COLOR, audienceLabel, relativeDate } from "../../src/components/NoticeStrip";
 import { colors } from "../../src/theme";
 
@@ -22,6 +22,7 @@ type Item = { kind: "header"; key: string; label: string } | { kind: "notice"; k
 export default function NoticesScreen() {
   const router = useRouter();
   const { user } = useAuth();
+  const listPad = useListContentStyle();
   const { highlight } = useLocalSearchParams<{ highlight?: string }>();
   const canPostSchoolWide = SCHOOL_WIDE_ROLES.includes(user?.role ?? "");
   const isTeacher = user?.role === "TEACHER";
@@ -205,7 +206,7 @@ export default function NoticesScreen() {
     <FlatList
       ref={setListRef}
       style={{ backgroundColor: colors.canvas }}
-      contentContainerStyle={{ padding: 16, gap: 10 }}
+      contentContainerStyle={{ ...listPad, gap: 10 }}
       data={items}
       keyExtractor={(it) => it.key}
       keyboardShouldPersistTaps="handled"
