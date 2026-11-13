@@ -24,6 +24,10 @@ function Gate() {
       router.replace("/contact");
       return;
     }
+    // One place post-login navigation (avoids racing login.tsx with tabs mount).
+    if (user && (PUBLIC_ROUTES.has(route) || route === "index")) {
+      router.replace("/(tabs)");
+    }
   }, [user, loading, segments, router]);
 
   if (loading) {

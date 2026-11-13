@@ -52,6 +52,19 @@ export function extractLoginPayload(res: AxiosResponse): LoginExtract {
   return { kind: "complete", auth };
 }
 
+/** Normalizes select-student or raw API auth objects (not wrapped in LoginResult). */
+export function normalizeAuthPayload(raw: Record<string, unknown> | null | undefined): AuthPayload {
+  if (!raw?.token) throw new Error("Sign-in failed — no token.");
+  return {
+    token: String(raw.token),
+    userId: String(raw.userId ?? ""),
+    schoolId: raw.schoolId != null ? String(raw.schoolId) : "",
+    role: String(raw.role ?? ""),
+    name: String(raw.name ?? ""),
+    schoolName: raw.schoolName != null ? String(raw.schoolName) : undefined,
+  };
+}
+
 export function loginErrorMessage(err: unknown): string {
-  return errorMessage(err, "Login failed. Check your phone number and password.");
+  return errorMessage(err, "Login failed. Check your username and password.");
 }

@@ -5,7 +5,7 @@ import { useRouter } from "expo-router";
 import { PasswordField } from "../src/ui";
 import { useAuth } from "../src/auth/AuthContext";
 import { loginWithPassword, selectStudent } from "../src/api/auth";
-import { extractLoginPayload, loginErrorMessage, type StudentLoginOption } from "../src/api/loginAuth";
+import { extractLoginPayload, loginErrorMessage, normalizeAuthPayload, type StudentLoginOption } from "../src/api/loginAuth";
 import { errorMessage } from "../src/api/client";
 import { isApiConfigured, API_BASE_URL } from "../src/config";
 import BrandLogo from "../src/components/BrandLogo";
@@ -13,7 +13,7 @@ import { colors } from "../src/theme";
 
 export default function LoginScreen() {
   const { applySession } = useAuth();
-  const router = useRouter();
+  const router = useRouter(); // contact link + student back only; post-login nav is in root Gate
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -26,7 +26,6 @@ export default function LoginScreen() {
   const finishLogin = async (auth: Parameters<typeof applySession>[0]) => {
     Keyboard.dismiss();
     await applySession(auth);
-    router.replace("/(tabs)");
   };
 
   const signIn = async () => {
@@ -58,8 +57,7 @@ export default function LoginScreen() {
     setBusy(true);
     try {
       const res = await selectStudent(studentPick.selectionToken, userId);
-      const auth = res.data?.data;
-      if (!auth?.token) throw new Error("Sign-in failed");
+      const auth = normalizeAuthPayload(res.data?.data as Record<string, unknown>);
       await finishLogin(auth);
     } catch (e) {
       setError(errorMessage(e, "Could not sign in as that student."));

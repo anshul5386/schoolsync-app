@@ -2,6 +2,8 @@
 
 One React Native + Expo (TypeScript) codebase that produces both the Android and the iOS app.
 
+**New to this repo?** Read **[APP_GUIDE.md](./APP_GUIDE.md)** or download **[APP_GUIDE.pdf](./APP_GUIDE.pdf)** for architecture, authentication, API calls, JSON shapes, and a file-by-file tour.
+
 **Expo SDK 53+** is required for **Android 15+ / 16 KB page size** devices (e.g. Samsung Android 17). SDK 52 preview APKs may crash on launch on those phones.
 
 There is **no separate backend**. The app calls the existing `schoolsync-api` with the same JWT
