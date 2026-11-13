@@ -26,8 +26,7 @@ export default function LoginScreen() {
   const finishLogin = async (auth: Parameters<typeof applySession>[0]) => {
     Keyboard.dismiss();
     await applySession(auth);
-    // Explicit tab route avoids Android flicker / app appearing to “minimize” after auth.
-    setTimeout(() => router.replace("/(tabs)"), 0);
+    // Root Gate redirects signed-in users to /(tabs); keep navigation in one place to avoid Android crashes.
   };
 
   const signIn = async () => {

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { ActivityIndicator, View } from "react-native";
 import { Stack, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -15,27 +15,20 @@ function Gate() {
   const { user, loading } = useAuth();
   const segments = useSegments();
   const router = useRouter();
-  const [routed, setRouted] = useState(false);
 
   useEffect(() => {
-    if (loading) {
-      setRouted(false);
-      return;
-    }
-    const route = segments[0] ?? "";
-    const isPublic = PUBLIC_ROUTES.has(String(route));
-    if (!user && !isPublic && route !== "index") {
+    if (loading) return;
+    const route = String(segments[0] ?? "");
+    if (!user && !PUBLIC_ROUTES.has(route) && route !== "index") {
       router.replace("/contact");
       return;
     }
-    if (user && (route === "login" || route === "register" || route === "contact")) {
+    if (user && (PUBLIC_ROUTES.has(route) || route === "index")) {
       router.replace("/(tabs)");
-      return;
     }
-    setRouted(true);
   }, [user, loading, segments, router]);
 
-  if (loading || !routed) {
+  if (loading) {
     return (
       <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: colors.canvas }}>
         <ActivityIndicator color={colors.navy} />
