@@ -1,16 +1,25 @@
+import type { ComponentProps } from "react";
 import { Tabs } from "expo-router";
-import { ActivityIndicator, Text, View } from "react-native";
+import type { BottomTabBarButtonProps } from "@react-navigation/bottom-tabs";
+import { PlatformPressable } from "@react-navigation/elements";
+import { ActivityIndicator, Pressable, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "../../src/auth/AuthContext";
 import { colors } from "../../src/theme";
 
-export const unstable_settings = {
-  initialRouteName: "index",
-};
+/**
+ * Expo Router can clear tabBarButton on hidden tabs (e.g. display:none).
+ * React Navigation still expects a pressable renderer — otherwise Android throws
+ * "undefined is not a function" (often surfaced via getPathFromState during tab mount).
+ */
+function TabBarButton(props: BottomTabBarButtonProps) {
+  const PressableImpl = PlatformPressable ?? Pressable;
+  return <PressableImpl {...(props as ComponentProps<typeof PressableImpl>)} />;
+}
 
-const tabBarIcon = (glyph: string) =>
-  ({ color, size }: { color: string; size?: number }) => (
-    <Text style={{ color, fontSize: size ?? 18 }}>{glyph}</Text>
+const tabIcon = (glyph: string) =>
+  ({ color, size }: { color: string; size: number }) => (
+    <Text style={{ color, fontSize: size ?? 20 }}>{glyph}</Text>
   );
 
 /** Role-aware tab visibility (mirrors schoolsync-web mobile nav). */
@@ -38,6 +47,7 @@ export default function TabsLayout() {
         sceneStyle: { backgroundColor: colors.canvas },
         tabBarActiveTintColor: colors.navy,
         tabBarInactiveTintColor: colors.inkMuted,
+        tabBarButton: TabBarButton,
         tabBarStyle: {
           backgroundColor: colors.white,
           borderTopColor: colors.line,
@@ -47,17 +57,18 @@ export default function TabsLayout() {
         },
       }}
     >
-      <Tabs.Screen name="index" options={{ title: "Home", tabBarIcon: tabBarIcon("⌂") }} />
-      <Tabs.Screen name="notices" options={{ title: "Notices", tabBarIcon: tabBarIcon("▤") }} />
+      <Tabs.Screen name="index" options={{ title: "Home", tabBarIcon: tabIcon("⌂") }} />
+      <Tabs.Screen name="notices" options={{ title: "Notices", tabBarIcon: tabIcon("▤") }} />
       <Tabs.Screen
         name="notifications"
         options={{
           title: "Alerts",
-          tabBarIcon: tabBarIcon("🔔"),
+          tabBarIcon: tabIcon("🔔"),
+          // Never use href: null on Android — use tabBarButton + hide via style instead.
           ...(showAlerts ? {} : { tabBarItemStyle: { display: "none" } }),
         }}
       />
-      <Tabs.Screen name="menu" options={{ title: "Menu", tabBarIcon: tabBarIcon("☰") }} />
+      <Tabs.Screen name="menu" options={{ title: "Menu", tabBarIcon: tabIcon("☰") }} />
     </Tabs>
   );
 }
