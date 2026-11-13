@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
-import { InteractionManager, Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { useState } from "react";
+import { Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
+import { Stack, useRouter } from "expo-router";
 import { PasswordField } from "../src/ui";
 import { useAuth } from "../src/auth/AuthContext";
 import { loginWithPassword, selectStudent } from "../src/api/auth";
@@ -12,17 +12,8 @@ import BrandLogo from "../src/components/BrandLogo";
 import { colors } from "../src/theme";
 
 export default function LoginScreen() {
-  const { user, applySession } = useAuth();
+  const { applySession } = useAuth();
   const router = useRouter();
-
-  /** After applySession (or existing session on this screen), open home once auth state is ready. */
-  useEffect(() => {
-    if (!user) return;
-    const task = InteractionManager.runAfterInteractions(() => {
-      router.replace("/(tabs)");
-    });
-    return () => task.cancel();
-  }, [user, router]);
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -76,6 +67,8 @@ export default function LoginScreen() {
   };
 
   return (
+    <>
+    <Stack.Screen options={{ headerShown: false }} />
     <SafeAreaView style={s.page} edges={["top", "bottom", "left", "right"]}>
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled">
@@ -133,6 +126,7 @@ export default function LoginScreen() {
       </ScrollView>
     </KeyboardAvoidingView>
     </SafeAreaView>
+    </>
   );
 }
 
