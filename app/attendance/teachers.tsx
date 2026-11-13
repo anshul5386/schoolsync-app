@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { AttendanceDatePicker, PastDayBanner } from "../../src/components/AttendanceCalendar";
+import { relativeDayLabel, todayISO } from "../../src/lib/dates";
 import { Pressable, Text, View } from "react-native";
 import { Stack } from "expo-router";
 import { getTeacherAttendance, bulkMarkTeacherAttendance } from "../../src/api/teacherAttendance";
@@ -31,20 +33,34 @@ function MarkBtn({ l, active, ok, onPress }: { l: string; active: boolean; ok: b
   );
 }
 
+function StatusPill({ status }: { status?: Status }) {
+  const ok = status === "PRESENT";
+  const label = status === "PRESENT" ? "Present" : status === "ABSENT" ? "Absent" : "Not marked";
+  return (
+    <Text style={{ overflow: "hidden", borderRadius: 99, paddingHorizontal: 10, paddingVertical: 4, fontSize: 11.5, fontWeight: "700",
+      backgroundColor: !status ? "#EEF0F4" : ok ? "#E6F4EC" : colors.dangerSoft,
+      color: !status ? colors.inkMuted : ok ? "#1E8E5A" : colors.danger }}>{label}</Text>
+  );
+}
+
 export default function TeacherAttendanceScreen() {
   const { user } = useAuth();
+  const today = todayISO();
+  const [date, setDate] = useState(today);
+  const isPast = date !== today;
   const [marks, setMarks] = useState<Record<string, Status>>({});
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   const { data, loading, error, reload } = useLoad(async () => {
-    const res = await getTeacherAttendance();
+    setMessage(null);
+    const res = await getTeacherAttendance(date);
     const rows: any[] = unwrap<any[]>(res) || [];
     const existing: Record<string, Status> = {};
     rows.forEach((t) => { if (t.status) existing[t.teacherId] = t.status; });
     setMarks(existing);
     return rows;
-  }, []);
+  }, [date]);
   const teachers: any[] = data ?? [];
 
   if (user && !["PRINCIPAL", "COORDINATOR"].includes(user.role)) {
@@ -75,30 +91,28 @@ export default function TeacherAttendanceScreen() {
   const vals = Object.values(marks);
   const presentCount = vals.filter((v) => v === "PRESENT").length;
   const absentCount = vals.filter((v) => v === "ABSENT").length;
+  const notMarked = teachers.length - Object.keys(marks).length;
 
   return (
     <Screen onRefresh={reload}>
       <Stack.Screen options={{ title: "Staff attendance" }} />
-      <Title sub="Mark teacher attendance daily at 7:45 AM — triggers substitution for absent staff">Staff attendance</Title>
+      <Title sub={isPast ? "Look back at who was present on any day" : "Mark each morning — absent staff trigger substitution"}>Staff attendance</Title>
       {!!error && <Message m={{ type: "error", text: "Failed to load teachers" }} />}
       <Message m={message} />
-      <Text style={{ fontSize: 13, color: colors.inkMuted }}>
-        {new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "short" })}
-      </Text>
+      <AttendanceDatePicker value={date} onChange={setDate} />
+      {isPast && <PastDayBanner date={date} onToday={() => setDate(today)} />}
       {loading ? <Loading /> : teachers.length === 0 ? (
         !error ? <Empty>No teachers found</Empty> : null
       ) : (
         <>
-          <Button small variant="secondary" onPress={markAllPresent}>All present</Button>
+          {!isPast && <Button small variant="secondary" onPress={markAllPresent}>All present</Button>}
           <Row>
             <MiniStat value={teachers.length} label="Total staff" />
             <MiniStat value={presentCount} label="Present" color="#1E8E5A" />
             <MiniStat value={absentCount} label="Absent" color={colors.danger} />
+            {isPast && notMarked > 0 && <MiniStat value={notMarked} label="Not marked" color="#B7791F" />}
           </Row>
-          <Text style={{ fontSize: 11, color: colors.inkSubtle }}>
-            Biometric (eSSL/BioMax) syncs end-of-day for HR. Mark here each morning for real-time substitution.
-          </Text>
-          <Card>
+          <Card title={relativeDayLabel(date)}>
             {teachers.map((t) => (
               <Row key={t.teacherId} style={{ justifyContent: "space-between", paddingVertical: 8, borderTopWidth: 1, borderTopColor: colors.line,
                 backgroundColor: marks[t.teacherId] === "ABSENT" ? "#FDF1EF" : undefined }}>
@@ -106,15 +120,24 @@ export default function TeacherAttendanceScreen() {
                   <Text style={{ fontSize: 14, fontWeight: "600", color: colors.ink }}>{t.name}</Text>
                   <Text style={{ fontSize: 11, color: colors.inkSubtle }}>{t.subject} · {t.classCount} classes</Text>
                 </View>
-                <Row style={{ gap: 6 }}>
-                  <MarkBtn l="P" ok active={marks[t.teacherId] === "PRESENT"} onPress={() => setMark(t.teacherId, "PRESENT")} />
-                  <MarkBtn l="A" ok={false} active={marks[t.teacherId] === "ABSENT"} onPress={() => setMark(t.teacherId, "ABSENT")} />
-                </Row>
+                {isPast ? <StatusPill status={marks[t.teacherId]} /> : (
+                  <Row style={{ gap: 6 }}>
+                    <MarkBtn l="P" ok active={marks[t.teacherId] === "PRESENT"} onPress={() => setMark(t.teacherId, "PRESENT")} />
+                    <MarkBtn l="A" ok={false} active={marks[t.teacherId] === "ABSENT"} onPress={() => setMark(t.teacherId, "ABSENT")} />
+                  </Row>
+                )}
               </Row>
             ))}
           </Card>
-          <Text style={{ fontSize: 12, color: colors.inkSubtle }}>{Object.keys(marks).length}/{teachers.length} marked</Text>
-          <Button onPress={submit} busy={submitting}>Submit staff attendance</Button>
+          {!isPast && (
+            <>
+              <Text style={{ fontSize: 12, color: colors.inkSubtle }}>{Object.keys(marks).length}/{teachers.length} marked</Text>
+              <Button onPress={submit} busy={submitting}>Submit staff attendance</Button>
+              <Text style={{ fontSize: 11, color: colors.inkSubtle }}>
+                Biometric (eSSL/BioMax) syncs end-of-day for HR. Mark here each morning for real-time substitution.
+              </Text>
+            </>
+          )}
         </>
       )}
     </Screen>
