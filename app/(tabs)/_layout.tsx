@@ -8,9 +8,10 @@ import { useAuth } from "../../src/auth/AuthContext";
 import { colors } from "../../src/theme";
 
 /**
- * Expo Router can clear tabBarButton on hidden tabs (e.g. display:none).
- * React Navigation still expects a pressable renderer — otherwise Android throws
- * "undefined is not a function" (often surfaced via getPathFromState during tab mount).
+ * Explicit pressable renderer for every tab button (hidden tabs included).
+ * Note: the "undefined is not a function … getPathFromState" crash after login was NOT caused by
+ * this — it came from query-string v9 (ESM, default export only), which expo-router requires
+ * as `queryString.stringify`. Keep query-string on v7 in package.json.
  */
 function TabBarButton(props: BottomTabBarButtonProps) {
   const PressableImpl = PlatformPressable ?? Pressable;
