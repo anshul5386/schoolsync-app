@@ -1,4 +1,8 @@
 import { Tabs } from "expo-router";
+
+export const unstable_settings = {
+  initialRouteName: "index",
+};
 import { ActivityIndicator, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "../../src/auth/AuthContext";
@@ -50,7 +54,12 @@ export default function TabsLayout() {
         options={{
           title: "Alerts",
           tabBarIcon: tabBarIcon("🔔"),
-          ...(showAlerts ? {} : { tabBarItemStyle: { display: "none" } }),
+          ...(showAlerts
+            ? {}
+            : {
+                tabBarItemStyle: { display: "none", width: 0, height: 0 },
+                tabBarButton: () => null,
+              }),
         }}
       />
       <Tabs.Screen name="menu" options={{ title: "Menu", tabBarIcon: tabBarIcon("☰") }} />

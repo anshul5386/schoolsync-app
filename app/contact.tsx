@@ -1,6 +1,6 @@
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
+import { Stack, useRouter } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
 import BrandLogo from "../src/components/BrandLogo";
 import { colors } from "../src/theme";
@@ -19,6 +19,8 @@ export default function ContactScreen() {
   };
 
   return (
+    <>
+    <Stack.Screen options={{ headerShown: false }} />
     <SafeAreaView style={s.page} edges={["top", "bottom", "left", "right"]}>
       <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled">
         <View style={s.card}>
@@ -43,6 +45,7 @@ export default function ContactScreen() {
         </View>
       </ScrollView>
     </SafeAreaView>
+    </>
   );
 }
 
