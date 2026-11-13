@@ -8,7 +8,9 @@ import { AuthProvider, useAuth } from "../src/auth/AuthContext";
 import { queryClient } from "../src/queryClient";
 import { colors } from "../src/theme";
 
-/** Signed-out users may only see /login and /register; signed-in users are kept off them. */
+const PUBLIC_ROUTES = new Set(["contact", "login", "register"]);
+
+/** Signed-out users see contact/login only; signed-in users land in the app. */
 function Gate() {
   const { user, loading } = useAuth();
   const segments = useSegments();
@@ -20,13 +22,14 @@ function Gate() {
       setRouted(false);
       return;
     }
-    const open = segments[0] === "login" || segments[0] === "register";
-    if (!user && !open) {
-      router.replace("/login");
+    const route = segments[0] ?? "";
+    const isPublic = PUBLIC_ROUTES.has(String(route));
+    if (!user && !isPublic && route !== "index") {
+      router.replace("/contact");
       return;
     }
-    if (user && open) {
-      router.replace("/");
+    if (user && (route === "login" || route === "register" || route === "contact")) {
+      router.replace("/(tabs)");
       return;
     }
     setRouted(true);
@@ -49,7 +52,9 @@ function Gate() {
       contentStyle: { backgroundColor: colors.canvas },
       animation: "slide_from_right",
     }}>
+      <Stack.Screen name="index" options={{ headerShown: false }} />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen name="contact" options={{ headerShown: false }} />
       <Stack.Screen name="login" options={{ headerShown: false }} />
     </Stack>
   );
