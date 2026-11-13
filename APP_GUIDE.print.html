@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Easool Mobile App — Developer Guide</title>
+<style>
+@page { margin: 18mm 16mm; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  font-size: 11pt;
+  line-height: 1.55;
+  color: #1a1a1a;
+  max-width: 42em;
+  margin: 0 auto;
+  padding: 0 0.5em;
+}
+h1 { font-size: 22pt; color: #0B2545; border-bottom: 2px solid #0B2545; padding-bottom: 0.3em; }
+h2 { font-size: 14pt; color: #0B2545; margin-top: 1.4em; page-break-after: avoid; }
+h3 { font-size: 12pt; margin-top: 1.1em; }
+table { border-collapse: collapse; width: 100%; margin: 1em 0; font-size: 10pt; }
+th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: left; vertical-align: top; }
+th { background: #f0f4f8; }
+pre, code { font-family: Menlo, Monaco, "Courier New", monospace; font-size: 9pt; }
+pre {
+  background: #f5f5f5;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  padding: 10px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  page-break-inside: avoid;
+}
+.mermaid-note {
+  background: #eef6ff;
+  border-left: 4px solid #2563eb;
+  padding: 8px 12px;
+  margin: 1em 0;
+  font-size: 10pt;
+}
+hr { border: none; border-top: 1px solid #ddd; margin: 1.5em 0; }
+a { color: #2563eb; text-decoration: none; }
+ul, ol { padding-left: 1.4em; }
+.title-meta { color: #666; font-size: 10pt; margin-bottom: 1.5em; }
+</style>
+</head>
+<body>
+<p class="title-meta">Easool · schoolsync-app · Generated from APP_GUIDE.md</p>
+<h1 id="easool-mobile-app-complete-guide-for-new-developers">Easool mobile app — complete guide for new developers</h1>
+<p>This document explains <strong>what the Easool app is</strong>, <strong>how files fit together</strong>, <strong>what happens from app launch to login</strong>, <strong>how every API call works</strong>, and <strong>how authentication flows</strong> from the phone to the backend. You do not need prior mobile experience to follow it; technical terms are explained as we go.</p>
+<hr />
+<h2 id="table-of-contents">Table of contents</h2>
+<ol>
+<li><a href="#1-the-big-picture">The big picture</a></li>
+<li><a href="#2-basic-terms-json-typescript-files">Basic terms (JSON, TypeScript, files)</a></li>
+<li><a href="#3-technology-stack">Technology stack</a></li>
+<li><a href="#4-repository-folders">Repository folders</a></li>
+<li><a href="#5-how-the-app-starts-and-runs">How the app starts and runs</a></li>
+<li><a href="#6-navigation-how-screens-are-chosen">Navigation: how screens are chosen</a></li>
+<li><a href="#7-authentication-end-to-end">Authentication (end to end)</a></li>
+<li><a href="#8-how-api-calls-work">How API calls work</a></li>
+<li><a href="#9-json-the-app-sends-and-receives">JSON the app sends and receives</a></li>
+<li><a href="#10-roles-and-what-users-see">Roles and what users see</a></li>
+<li><a href="#11-walkthrough-login-then-home-dashboard">Walkthrough: login then home dashboard</a></li>
+<li><a href="#12-walkthrough-any-feature-screen">Walkthrough: any feature screen</a></li>
+<li><a href="#13-configuration-builds-and-environments">Configuration, builds, and environments</a></li>
+<li><a href="#14-where-the-website-fits-in">Where the website fits in</a></li>
+<li><a href="#15-glossary">Glossary</a></li>
+<li><a href="#16-what-to-read-next-in-the-code">What to read next in the code</a></li>
+</ol>
+<hr />
+<h2 id="1-the-big-picture">1. The big picture</h2>
+<p>Easool is school operations software (attendance, timetables, notices, approvals, etc.). There are <strong>three separate codebases</strong> you should know about:</p>
+<table>
+<thead>
+<tr>
+<th>Piece</th>
+<th>Repo / folder</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Backend API</strong></td>
+<td><code>schoolsync</code> (Java Spring Boot)</td>
+<td>Stores data, enforces rules, issues JWT tokens. Hosted on Railway in production.</td>
+</tr>
+<tr>
+<td><strong>Website</strong></td>
+<td><code>schoolsync-web</code> (React)</td>
+<td><a href="https://easool.com">easool.com</a> — same API, runs in the browser.</td>
+</tr>
+<tr>
+<td><strong>Mobile app</strong></td>
+<td><code>schoolsync-app</code> (this repo)</td>
+<td>Android/iOS app built with <strong>Expo + React Native</strong>. <strong>No server of its own</strong> — only talks to the backend API.</td>
+</tr>
+</tbody>
+</table>
+<pre><code>┌─────────────┐     HTTPS + JSON      ┌──────────────────────┐
+│  Phone app  │ ────────────────────► │  schoolsync-api    │
+│ schoolsync- │   Authorization:      │  (Railway / local)   │
+│    app      │   Bearer &lt;JWT&gt;        │                      │
+└─────────────┘                       └──────────────────────┘
+       ▲                                        ▲
+       │                                        │
+┌──────┴──────┐                          ┌──────┴──────┐
+│  Expo Go or │                          │ schoolsync-   │
+│  EAS APK    │                          │ web (browser) │
+└─────────────┘                          └───────────────┘
+</code></pre>
+<p>The mobile app is <strong>not a copy of the website UI</strong> (different layout — tabs, native scroll, etc.), but it uses the <strong>same login</strong>, <strong>same JWT</strong>, and <strong>same REST endpoints</strong> as the web.</p>
+<hr />
+<h2 id="2-basic-terms-json-typescript-files">2. Basic terms (JSON, TypeScript, files)</h2>
+<table>
+<thead>
+<tr>
+<th>Term</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>JSON</strong></td>
+<td>Text format for data over the network. Example: <code>{ "phone": "QA-SCH-001-STU-0001", "otp": "secret" }</code>. Keys are in quotes; the API almost always wraps answers in <code>{ "success", "message", "data" }</code>.</td>
+</tr>
+<tr>
+<td><strong>TypeScript (<code>.ts</code>)</strong></td>
+<td>JavaScript with types (<code>userId: string</code>) so mistakes are caught before build.</td>
+</tr>
+<tr>
+<td><strong>TSX (<code>.tsx</code>)</strong></td>
+<td>TypeScript + UI markup. A screen file like <code>login.tsx</code> defines React components (buttons, text fields).</td>
+</tr>
+<tr>
+<td><strong>React</strong></td>
+<td>UI library: you describe screens as components; when <code>user</code> state changes, the screen re-renders.</td>
+</tr>
+<tr>
+<td><strong>React Native</strong></td>
+<td>React for phones: <code>&lt;Text&gt;</code>, <code>&lt;View&gt;</code> instead of HTML <code>&lt;div&gt;</code>.</td>
+</tr>
+<tr>
+<td><strong>Expo</strong></td>
+<td>Toolkit on top of React Native: dev server, native modules (secure storage), cloud builds (EAS).</td>
+</tr>
+<tr>
+<td><strong>Expo Router</strong></td>
+<td><strong>File-based routing</strong>: file path under <code>app/</code> = URL path. <code>app/login.tsx</code> → <code>/login</code>.</td>
+</tr>
+<tr>
+<td><strong>JWT / token</strong></td>
+<td>A signed string from the server proving “this request is user X”. The app stores it and sends <code>Authorization: Bearer &lt;token&gt;</code> on protected calls.</td>
+</tr>
+<tr>
+<td><strong>Axios</strong></td>
+<td>HTTP client library used in <code>src/api/client.ts</code> to <code>POST</code>/<code>GET</code> the API.</td>
+</tr>
+<tr>
+<td><strong>SecureStore</strong></td>
+<td>Encrypted storage on the device for the JWT (via <code>expo-secure-store</code>).</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="3-technology-stack">3. Technology stack</h2>
+<table>
+<thead>
+<tr>
+<th>Layer</th>
+<th>Choice in this repo</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Runtime on phone</td>
+<td>React Native <strong>0.79</strong> (Expo SDK <strong>53</strong>)</td>
+</tr>
+<tr>
+<td>Language</td>
+<td><strong>TypeScript</strong></td>
+</tr>
+<tr>
+<td>Routing</td>
+<td><strong>expo-router</strong> (<code>app/</code> folder)</td>
+</tr>
+<tr>
+<td>HTTP</td>
+<td><strong>axios</strong></td>
+</tr>
+<tr>
+<td>Server state (optional)</td>
+<td><strong>@tanstack/react-query</strong> (<code>QueryClient</code> in root layout; many screens use simple <code>useState</code> + <code>useLoad</code> instead)</td>
+</tr>
+<tr>
+<td>Auth session</td>
+<td><strong>React Context</strong> (<code>src/auth/AuthContext.tsx</code>) + <strong>SecureStore</strong></td>
+</tr>
+</tbody>
+</table>
+<p>Important files at repo root:</p>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>package.json</code></td>
+<td>NPM dependencies and scripts (<code>npm start</code>, <code>npm run typecheck</code>).</td>
+</tr>
+<tr>
+<td><code>app.json</code></td>
+<td>Expo app name, icon, Android package id, EAS <code>projectId</code>.</td>
+</tr>
+<tr>
+<td><code>eas.json</code></td>
+<td>Cloud build profiles (<code>preview</code> = APK for testers, <code>production</code> = Play Store AAB).</td>
+</tr>
+<tr>
+<td><code>.env</code> (not committed)</td>
+<td><code>EXPO_PUBLIC_API_BASE_URL</code> — which API host the built app uses.</td>
+</tr>
+<tr>
+<td><code>.env.example</code></td>
+<td>Template for <code>.env</code>.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="4-repository-folders">4. Repository folders</h2>
+<pre><code>schoolsync-app/
+├── app/                    # Screens (Expo Router) — one file ≈ one route
+│   ├── _layout.tsx         # Root: providers, auth gate, stack navigator
+│   ├── index.tsx           # Cold start: redirect to contact or tabs
+│   ├── login.tsx           # Sign in
+│   ├── contact.tsx         # Guest landing / “contact us”
+│   ├── (tabs)/             # Bottom tab area (signed-in shell)
+│   │   ├── _layout.tsx     # Tab bar: Home, Notices, Alerts, Menu
+│   │   ├── index.tsx       # Home dashboard
+│   │   ├── notices.tsx
+│   │   ├── notifications.tsx
+│   │   └── menu.tsx
+│   ├── attendance/         # e.g. students.tsx, teachers.tsx
+│   ├── super-admin/        # Platform operator screens
+│   ├── timetable/
+│   └── …                   # approvals, records, directory, etc.
+├── src/
+│   ├── api/                # One module per backend area (thin wrappers)
+│   │   ├── client.ts       # Axios instance + JWT interceptor + 401 logout
+│   │   ├── auth.ts         # login, register, select-student, …
+│   │   ├── loginAuth.ts    # Parse login JSON into app-shaped auth object
+│   │   ├── dashboard.ts
+│   │   └── …
+│   ├── auth/
+│   │   └── AuthContext.tsx # Global user session
+│   ├── ui/index.tsx        # Shared buttons, fields, Screen, Card, …
+│   ├── menu.ts             # Role-based menu items (mirrors web nav)
+│   ├── theme.ts            # Colors (Easool light theme)
+│   ├── config.ts           # API base URL from env
+│   └── components/         # BrandLogo, NoticeStrip, ErrorBoundary, …
+├── assets/                 # logo.png, images
+├── APP_GUIDE.md            # This file
+├── README.md               # Short setup notes
+└── PILOT_RUNBOOK.md        # EAS / APK testing without a Mac
+</code></pre>
+<p><strong>Rule of thumb:</strong> If you want to change <strong>what the user sees</strong>, start in <code>app/…</code>. If you want to change <strong>how data is fetched</strong>, start in <code>src/api/…</code>.</p>
+<hr />
+<h2 id="5-how-the-app-starts-and-runs">5. How the app starts and runs</h2>
+<h3 id="51-entry-point">5.1 Entry point</h3>
+<p>Expo Router’s entry is configured in <code>package.json</code>:</p>
+<pre><code class="language-json">&quot;main&quot;: &quot;expo-router/entry&quot;
+</code></pre>
+<p>That bootstrap loads <strong><code>app/_layout.tsx</code></strong> first (the root layout).</p>
+<h3 id="52-root-layout-wrappers-and-gate">5.2 Root layout — wrappers and “Gate”</h3>
+<p>File: <code>app/_layout.tsx</code></p>
+<p>Execution order (outside → inside):</p>
+<ol>
+<li><strong><code>SafeAreaProvider</code></strong> — respects notches / status bar / home indicator.</li>
+<li><strong><code>QueryClientProvider</code></strong> — React Query (global cache; used lightly).</li>
+<li><strong><code>AuthProvider</code></strong> — loads saved token/user from SecureStore on launch.</li>
+<li><strong><code>Gate</code></strong> — while <code>loading</code>, shows spinner; when signed out, keeps user on <code>contact</code> / <code>login</code>; when signed in, renders the navigation stack.</li>
+<li><strong><code>ErrorBoundary</code></strong> — catches render crashes and shows a friendly error instead of closing the app.</li>
+</ol>
+<h3 id="53-cold-start-route">5.3 Cold start route</h3>
+<p>File: <code>app/index.tsx</code></p>
+<pre><code>App opens
+    → AuthProvider reads SecureStore (token + user JSON)
+    → index.tsx runs
+         if still loading → spinner
+         if user exists  → &lt;Redirect href=&quot;/(tabs)&quot; /&gt;
+         if no user      → &lt;Redirect href=&quot;/contact&quot; /&gt;
+</code></pre>
+<p>Guests see <strong>Contact</strong>; returning users skip login and land on <strong>tabs</strong>.</p>
+<h3 id="54-sequence-diagram-launch-signed-in-home">5.4 Sequence diagram (launch → signed-in home)</h3>
+<blockquote>
+<p><strong>Diagram (flow chart):</strong> The full interactive version is in <code>APP_GUIDE.md</code> under the same section. Summary:
+</p>
+</blockquote>
+<pre><code>sequenceDiagram
+    participant OS as Android/iOS
+    participant RN as React Native bundle
+    participant Layout as app/_layout.tsx
+    participant Auth as AuthContext
+    participant Store as Secur…
+</code></pre>
+<hr />
+<h2 id="6-navigation-how-screens-are-chosen">6. Navigation: how screens are chosen</h2>
+<p>Expo Router maps <strong>file paths to URLs</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Route (approx.)</th>
+<th>Who sees it</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>app/contact.tsx</code></td>
+<td><code>/contact</code></td>
+<td>Guests</td>
+</tr>
+<tr>
+<td><code>app/login.tsx</code></td>
+<td><code>/login</code></td>
+<td>Sign-in</td>
+</tr>
+<tr>
+<td><code>app/(tabs)/index.tsx</code></td>
+<td><code>/(tabs)</code> home</td>
+<td>Signed-in</td>
+</tr>
+<tr>
+<td><code>app/approvals.tsx</code></td>
+<td><code>/approvals</code></td>
+<td>Stack screen from Menu / Home links</td>
+</tr>
+<tr>
+<td><code>app/attendance/students.tsx</code></td>
+<td><code>/attendance/students</code></td>
+<td>Teachers, principals, …</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><strong><code>(tabs)</code></strong> — parentheses mean a <strong>route group</strong> (bottom tab bar), not a visible URL segment.</li>
+<li><strong>Stack screens</strong> — most <code>app/*.tsx</code> files outside <code>(tabs)</code> push on top of tabs when you <code>router.push("/approvals")</code>.</li>
+</ul>
+<p><strong>Menu tab</strong> (<code>app/(tabs)/menu.tsx</code>) reads <code>src/menu.ts</code> and shows only items allowed for <code>user.role</code>.</p>
+<hr />
+<h2 id="7-authentication-end-to-end">7. Authentication (end to end)</h2>
+<h3 id="71-concepts">7.1 Concepts</h3>
+<table>
+<thead>
+<tr>
+<th>Concept</th>
+<th>Where it lives</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Login request</td>
+<td><code>app/login.tsx</code> → <code>src/api/auth.ts</code> → <code>POST /auth/login</code></td>
+</tr>
+<tr>
+<td>Parse response</td>
+<td><code>src/api/loginAuth.ts</code> → <code>extractLoginPayload()</code></td>
+</tr>
+<tr>
+<td>Save session</td>
+<td><code>src/auth/AuthContext.tsx</code> → <code>applySession()</code> → SecureStore</td>
+</tr>
+<tr>
+<td>Attach token to requests</td>
+<td><code>src/api/client.ts</code> request interceptor</td>
+</tr>
+<tr>
+<td>Expired / invalid token</td>
+<td>Response <code>401</code> → <code>onUnauthorized()</code> → <code>logout()</code> clears store</td>
+</tr>
+<tr>
+<td>Current user in UI</td>
+<td><code>useAuth()</code> hook anywhere in the tree under <code>AuthProvider</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="72-what-the-user-types">7.2 What the user types</h3>
+<p>The app login field is labeled <strong>UserName</strong> (school-issued username, e.g. <code>QA-SCH-001-STU-0001</code>). It is sent as <code>phone</code> in the JSON body because the backend <code>LoginRequest</code> field is still named <code>phone</code> (historical name — it accepts username too).</p>
+<h3 id="73-login-steps-password">7.3 Login steps (password)</h3>
+<blockquote>
+<p><strong>Diagram (flow chart):</strong> The full interactive version is in <code>APP_GUIDE.md</code> under the same section. Summary:
+</p>
+</blockquote>
+<pre><code>sequenceDiagram
+    participant User
+    participant Login as app/login.tsx
+    participant AuthAPI as src/api/auth.ts
+    participant Backend as POST /auth/login
+    participant Parse as loginAuth.ts…
+</code></pre>
+<h3 id="74-what-is-stored-on-the-device">7.4 What is stored on the device</h3>
+<p>After login, <strong>two keys</strong> in SecureStore:</p>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Content</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ss_token</code></td>
+<td>JWT string</td>
+</tr>
+<tr>
+<td><code>ss_user</code></td>
+<td>JSON string: <code>{ userId, schoolId, role, name, schoolName? }</code></td>
+</tr>
+</tbody>
+</table>
+<p>On next app open, <code>AuthProvider</code> reads these <strong>without</strong> calling the API again (until token expires or API returns 401).</p>
+<p>If <code>schoolName</code> was missing, <code>AuthContext</code> may call <code>GET /profile</code> once to fill it in (<code>hydrateSchoolName</code>).</p>
+<h3 id="75-public-vs-protected-routes">7.5 Public vs protected routes</h3>
+<p><strong>Public (no token required):</strong> e.g. <code>POST /auth/login</code>, <code>GET /auth/schools</code>, <code>POST /auth/register</code>.</p>
+<p><strong>Protected (token required):</strong> almost everything else (<code>/dashboard/stats</code>, <code>/notices</code>, <code>/attendance/...</code>). The backend Spring Security validates the JWT; the app only adds the header.</p>
+<hr />
+<h2 id="8-how-api-calls-work">8. How API calls work</h2>
+<h3 id="81-central-client">8.1 Central client</h3>
+<p>File: <strong><code>src/api/client.ts</code></strong></p>
+<pre><code class="language-text">1. axios.create({ baseURL: API_BASE_URL, timeout: 20000 })
+2. Before each request:
+      token = await SecureStore.getItemAsync(&quot;ss_token&quot;)
+      if token → header Authorization: Bearer &lt;token&gt;
+3. On response error with status 401:
+      call registered logout handler (clear session)
+</code></pre>
+<p><code>API_BASE_URL</code> comes from <strong><code>src/config.ts</code></strong>:</p>
+<ul>
+<li>Default production: <code>https://schoolsync-api-production.up.railway.app</code></li>
+<li>Override at build time: <code>EXPO_PUBLIC_API_BASE_URL</code> in <code>.env</code> or <code>eas.json</code> <code>env</code> block</li>
+</ul>
+<p><strong>Important:</strong> Unlike the website dev server, the app <strong>does not</strong> use a <code>/api</code> prefix. It hits the API host directly (<code>/auth/login</code>, not <code>/api/auth/login</code>).</p>
+<h3 id="82-per-feature-modules">8.2 Per-feature modules</h3>
+<p>Each file under <code>src/api/</code> is a <strong>thin wrapper</strong>:</p>
+<pre><code class="language-typescript">// src/api/dashboard.ts
+import api from &quot;./client&quot;;
+export const getDashboardStats = () =&gt; api.get(&quot;/dashboard/stats&quot;);
+</code></pre>
+<p>Screens import these functions — they do <strong>not</strong> embed URLs everywhere.</p>
+<h3 id="83-typical-call-chain-home-dashboard">8.3 Typical call chain (Home dashboard)</h3>
+<table>
+<thead>
+<tr>
+<th>Step</th>
+<th>Code</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Screen</td>
+<td><code>app/(tabs)/index.tsx</code> → <code>Dashboard</code> component</td>
+</tr>
+<tr>
+<td>API fn</td>
+<td><code>getDashboardStats()</code> in <code>src/api/dashboard.ts</code></td>
+</tr>
+<tr>
+<td>HTTP</td>
+<td><code>GET https://…/dashboard/stats</code> + <code>Authorization: Bearer …</code></td>
+</tr>
+<tr>
+<td>Backend</td>
+<td><code>DashboardController</code> in <code>schoolsync-api</code></td>
+</tr>
+<tr>
+<td>UI</td>
+<td>Sets <code>stats</code> state, renders cards</td>
+</tr>
+</tbody>
+</table>
+<p>Errors go through <code>errorMessage()</code> in <code>client.ts</code> for user-facing text.</p>
+<h3 id="84-helper-useload">8.4 Helper: <code>useLoad</code></h3>
+<p>File: <strong><code>src/lib/useLoad.ts</code></strong></p>
+<p>Many screens use:</p>
+<pre><code class="language-typescript">const { data, loading, error, reload } = useLoad(() =&gt; getFoo().then(r =&gt; r.data.data), []);
+</code></pre>
+<p>Pattern: <code>response.data.data</code> is the inner payload (see JSON envelope below).</p>
+<h3 id="85-app-backend-endpoint-map-main-areas">8.5 App ↔ backend endpoint map (main areas)</h3>
+<table>
+<thead>
+<tr>
+<th>App module</th>
+<th>HTTP prefix (backend)</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>auth.ts</code></td>
+<td><code>/auth</code></td>
+<td><code>POST /auth/login</code></td>
+</tr>
+<tr>
+<td><code>dashboard.ts</code></td>
+<td><code>/dashboard</code></td>
+<td><code>GET /dashboard/stats</code></td>
+</tr>
+<tr>
+<td><code>notices.ts</code></td>
+<td><code>/notices</code></td>
+<td><code>GET /notices</code></td>
+</tr>
+<tr>
+<td><code>notifications.ts</code></td>
+<td><code>/notifications</code></td>
+<td><code>GET /notifications</code></td>
+</tr>
+<tr>
+<td><code>attendance.ts</code></td>
+<td><code>/attendance/students</code></td>
+<td>mark student attendance</td>
+</tr>
+<tr>
+<td><code>teacherAttendance.ts</code></td>
+<td><code>/attendance/teachers</code></td>
+<td>staff attendance</td>
+</tr>
+<tr>
+<td><code>timetable.ts</code></td>
+<td><code>/timetable</code></td>
+<td>periods / weekly view</td>
+</tr>
+<tr>
+<td><code>records.ts</code>, <code>studentRecords.ts</code></td>
+<td><code>/records</code>, <code>/student/records</code></td>
+<td>assignments, exams</td>
+</tr>
+<tr>
+<td><code>registrations.ts</code></td>
+<td><code>/registrations</code></td>
+<td>account approval queue</td>
+</tr>
+<tr>
+<td><code>superAdmin.ts</code></td>
+<td><code>/super-admin</code></td>
+<td>cross-school admin</td>
+</tr>
+<tr>
+<td><code>profile.ts</code></td>
+<td><code>/profile</code></td>
+<td>profile / school name</td>
+</tr>
+</tbody>
+</table>
+<p>Full controllers live under <code>schoolsync-api/.../controller/</code> in the backend repo.</p>
+<hr />
+<h2 id="9-json-the-app-sends-and-receives">9. JSON the app sends and receives</h2>
+<h3 id="91-standard-envelope-almost-every-response">9.1 Standard envelope (almost every response)</h3>
+<p>Backend type: <code>ApiResponse&lt;T&gt;</code> → <code>{ success, message, data }</code></p>
+<p><strong>Success example (login complete):</strong></p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;message&quot;: &quot;OK&quot;,
+  &quot;data&quot;: {
+    &quot;status&quot;: &quot;COMPLETE&quot;,
+    &quot;auth&quot;: {
+      &quot;token&quot;: &quot;eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...&quot;,
+      &quot;userId&quot;: &quot;3fa85f64-5717-4562-b3fc-2c963f66afa6&quot;,
+      &quot;schoolId&quot;: &quot;8b2e1c40-1234-5678-9abc-def012345678&quot;,
+      &quot;role&quot;: &quot;TEACHER&quot;,
+      &quot;name&quot;: &quot;Priya Sharma&quot;,
+      &quot;schoolName&quot;: &quot;Demo Public School&quot;
+    },
+    &quot;selectionToken&quot;: null,
+    &quot;studentOptions&quot;: null
+  }
+}
+</code></pre>
+<p><strong>Multi-student on one username/phone:</strong></p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;message&quot;: &quot;OK&quot;,
+  &quot;data&quot;: {
+    &quot;status&quot;: &quot;SELECT_STUDENT&quot;,
+    &quot;auth&quot;: null,
+    &quot;selectionToken&quot;: &quot;short-lived-token-string&quot;,
+    &quot;studentOptions&quot;: [
+      {
+        &quot;userId&quot;: &quot;...&quot;,
+        &quot;name&quot;: &quot;Arjun&quot;,
+        &quot;schoolName&quot;: &quot;Demo School&quot;,
+        &quot;classLabel&quot;: &quot;Class 8-A&quot;
+      }
+    ]
+  }
+}
+</code></pre>
+<p>The app handles this in <code>extractLoginPayload()</code> (<code>src/api/loginAuth.ts</code>).</p>
+<h3 id="92-login-request-body">9.2 Login request body</h3>
+<pre><code class="language-json">{
+  &quot;phone&quot;: &quot;QA-SCH-001-STU-0001&quot;,
+  &quot;otp&quot;: &quot;your-password-here&quot;
+}
+</code></pre>
+<p>Field name <code>otp</code> is <strong>the password</strong> for password login (same as website).</p>
+<h3 id="93-after-login-authorized-request">9.3 After login — authorized request</h3>
+<pre><code class="language-http">GET /dashboard/stats HTTP/1.1
+Host: schoolsync-api-production.up.railway.app
+Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
+Accept: application/json
+</code></pre>
+<p><strong>Example response:</strong></p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;message&quot;: &quot;OK&quot;,
+  &quot;data&quot;: {
+    &quot;totalStudents&quot;: 420,
+    &quot;totalClasses&quot;: 24,
+    &quot;totalTeachers&quot;: 32,
+    &quot;teachersPresent&quot;: 30,
+    &quot;teachersAbsent&quot;: 2,
+    &quot;myClassCount&quot;: 6,
+    &quot;classesAttMarked&quot;: 4,
+    &quot;myAttendancePercentage&quot;: null
+  }
+}
+</code></pre>
+<h3 id="94-error-response">9.4 Error response</h3>
+<pre><code class="language-json">{
+  &quot;success&quot;: false,
+  &quot;message&quot;: &quot;Invalid credentials&quot;,
+  &quot;data&quot;: null
+}
+</code></pre>
+<p>Axios throws; <code>errorMessage()</code> prefers <code>err.response.data.message</code>.</p>
+<hr />
+<h2 id="10-roles-and-what-users-see">10. Roles and what users see</h2>
+<p>Roles come from the JWT / <code>AuthResponse.role</code> (enum on backend), e.g.:</p>
+<p><code>STUDENT</code>, <code>TEACHER</code>, <code>PRINCIPAL</code>, <code>COORDINATOR</code>, <code>SCHOOL_ADMIN</code>, <code>SUB_COORDINATOR</code>, <code>DIRECTOR</code>, <code>CHAIRMAN</code>, <code>SUPER_ADMIN</code></p>
+<table>
+<thead>
+<tr>
+<th>Mechanism</th>
+<th>File</th>
+<th>Behavior</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Home dashboard</td>
+<td><code>app/(tabs)/index.tsx</code></td>
+<td><code>SUPER_ADMIN</code> → <code>SuperAdminHome</code>; others → school dashboard with stats</td>
+</tr>
+<tr>
+<td>Bottom tabs</td>
+<td><code>app/(tabs)/_layout.tsx</code></td>
+<td>Hides <strong>Alerts</strong> tab for <code>SUPER_ADMIN</code> (<code>href: null</code>)</td>
+</tr>
+<tr>
+<td>Menu list</td>
+<td><code>src/menu.ts</code> → <code>menuFor(role)</code></td>
+<td>Filters <code>MENU</code> items by <code>roles</code> array</td>
+</tr>
+<tr>
+<td>Quick actions on home</td>
+<td><code>(tabs)/index.tsx</code></td>
+<td>Buttons depend on <code>role</code> constants (<code>ADMIN_ROLES</code>, <code>MARK_ATTENDANCE_ROLES</code>, …)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Super admin</strong> operates across schools; <strong>school roles</strong> are scoped to one <code>schoolId</code> in the token.</p>
+<hr />
+<h2 id="11-walkthrough-login-then-home-dashboard">11. Walkthrough: login then home dashboard</h2>
+<h3 id="step-a-guest-opens-app">Step A — Guest opens app</h3>
+<ol>
+<li><code>index.tsx</code> → no user → <code>/contact</code></li>
+<li>User taps <strong>Sign in</strong> → <code>router.push("/login")</code></li>
+</ol>
+<h3 id="step-b-login-screen-applogintsx">Step B — Login screen (<code>app/login.tsx</code>)</h3>
+<ol>
+<li><code>loginWithPassword(phone.trim(), password)</code> </li>
+<li><code>extractLoginPayload</code> returns <code>auth</code> object</li>
+<li><code>applySession(auth)</code> writes token + user</li>
+<li><code>router.replace("/(tabs)")</code> — replaces login in history so Back does not return to password screen</li>
+</ol>
+<h3 id="step-c-tabs-layout-apptabs_layouttsx">Step C — Tabs layout (<code>app/(tabs)/_layout.tsx</code>)</h3>
+<ol>
+<li>If no user → redirect <code>/login</code> (safety net)</li>
+<li>Renders tab navigator: Home, Notices, Alerts (if role allows), Menu</li>
+</ol>
+<h3 id="step-d-home-apptabsindextsx">Step D — Home (<code>app/(tabs)/index.tsx</code>)</h3>
+<ol>
+<li><code>useAuth()</code> → <code>user.role</code>, <code>user.name</code></li>
+<li><code>getDashboardStats()</code> in <code>useEffect</code> / <code>load()</code></li>
+<li>Renders greeting, KPI cards, <code>NoticeStrip</code>, quick actions</li>
+<li><code>NoticeStrip</code> (<code>src/components/NoticeStrip.tsx</code>) separately calls <code>getNotices()</code></li>
+</ol>
+<hr />
+<h2 id="12-walkthrough-any-feature-screen">12. Walkthrough: any feature screen</h2>
+<p>Example: <strong>Account requests / approvals</strong></p>
+<table>
+<thead>
+<tr>
+<th>Layer</th>
+<th>Location</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Entry from UI</td>
+<td>Home quick action or Menu → path <code>/approvals</code></td>
+</tr>
+<tr>
+<td>Screen file</td>
+<td><code>app/approvals.tsx</code></td>
+</tr>
+<tr>
+<td>API</td>
+<td><code>src/api/registrations.ts</code> — <code>getRequests</code>, approve/reject helpers</td>
+</tr>
+<tr>
+<td>Backend</td>
+<td><code>RegistrationAdminController</code> — <code>/registrations/...</code></td>
+</tr>
+</tbody>
+</table>
+<p>To trace a screen you do not know:</p>
+<ol>
+<li>Search <code>app/</code> for the route filename (e.g. <code>approvals.tsx</code>).</li>
+<li>Read imports from <code>../../src/api/...</code>.</li>
+<li>Open that api file for the exact path and HTTP method.</li>
+<li>Grep the same path in <code>schoolsync</code> backend controllers.</li>
+</ol>
+<hr />
+<h2 id="13-configuration-builds-and-environments">13. Configuration, builds, and environments</h2>
+<h3 id="131-local-development">13.1 Local development</h3>
+<ol>
+<li><code>npm install</code></li>
+<li>Copy <code>.env.example</code> → <code>.env</code>, set <code>EXPO_PUBLIC_API_BASE_URL</code></li>
+<li><code>npx expo start</code> → scan QR with Expo Go (needs Metro on a PC) <strong>or</strong> use EAS <strong>preview</strong> APK (no PC)</li>
+</ol>
+<h3 id="132-eas-cloud-build-what-you-use-for-samsung-testing">13.2 EAS cloud build (what you use for Samsung testing)</h3>
+<table>
+<thead>
+<tr>
+<th>Profile</th>
+<th>Output</th>
+<th>Use when</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>preview</code> / <code>pilot</code></td>
+<td><strong>APK</strong></td>
+<td>Hand to testers; uses <code>env.EXPO_PUBLIC_API_BASE_URL</code> in <code>eas.json</code></td>
+</tr>
+<tr>
+<td><code>development</code></td>
+<td>Dev client APK</td>
+<td>Needs Metro / dev server to load JS</td>
+</tr>
+<tr>
+<td><code>production</code></td>
+<td><strong>AAB</strong></td>
+<td>Google Play only — not sideload friendly</td>
+</tr>
+</tbody>
+</table>
+<p>See <strong><code>PILOT_RUNBOOK.md</code></strong> for Expo projectId, install QR, Android 16KB / SDK 53 notes.</p>
+<h3 id="133-what-gets-baked-into-the-apk">13.3 What gets baked into the APK</h3>
+<p>At <strong>build time</strong>, <code>EXPO_PUBLIC_*</code> env vars are inlined into the JS bundle. Changing the API URL requires a <strong>new build</strong> (or a custom update pipeline), not just editing Railway.</p>
+<hr />
+<h2 id="14-where-the-website-fits-in">14. Where the website fits in</h2>
+<table>
+<thead>
+<tr>
+<th>Topic</th>
+<th>Website (<code>schoolsync-web</code>)</th>
+<th>Mobile app</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>API host</td>
+<td>Often <code>/api</code> proxy → backend in dev</td>
+<td>Direct <code>API_BASE_URL</code></td>
+</tr>
+<tr>
+<td>Login UI</td>
+<td><code>AuthShell</code>, same credentials</td>
+<td><code>app/login.tsx</code></td>
+</tr>
+<tr>
+<td>Navigation</td>
+<td>Sidebar / routes in <code>src/lib/navigation.js</code></td>
+<td>Tabs + <code>src/menu.ts</code> (kept in sync manually)</td>
+</tr>
+<tr>
+<td>Token storage</td>
+<td>Browser storage / cookies pattern</td>
+<td><code>expo-secure-store</code></td>
+</tr>
+</tbody>
+</table>
+<p>When adding a feature, backend changes happen in <strong><code>schoolsync</code></strong> once; web and app each get a UI that calls the new endpoint.</p>
+<hr />
+<h2 id="15-glossary">15. Glossary</h2>
+<table>
+<thead>
+<tr>
+<th>Word</th>
+<th>Meaning in this project</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Easool</strong></td>
+<td>Product name shown on phone and easool.com</td>
+</tr>
+<tr>
+<td><strong>SchoolSync</strong></td>
+<td>Internal / repo name for backend modules</td>
+</tr>
+<tr>
+<td><strong>EAS</strong></td>
+<td>Expo Application Services — cloud builds</td>
+</tr>
+<tr>
+<td><strong>Metro</strong></td>
+<td>JS bundler dev server (<code>expo start</code>)</td>
+</tr>
+<tr>
+<td><strong>Context</strong></td>
+<td>React way to share <code>user</code> without prop drilling (<code>AuthContext</code>)</td>
+</tr>
+<tr>
+<td><strong>Interceptor</strong></td>
+<td>Axios hook that runs before/after every HTTP call</td>
+</tr>
+<tr>
+<td><strong>Route group <code>(tabs)</code></strong></td>
+<td>Folder name for tab layout without extra URL segment</td>
+</tr>
+<tr>
+<td><strong>Pilot / preview build</strong></td>
+<td>Internal APK for QA</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="16-what-to-read-next-in-the-code">16. What to read next in the code</h2>
+<p>Suggested order for a <strong>guided tour</strong> (open files in the IDE in this sequence):</p>
+<ol>
+<li><code>src/config.ts</code> — where API URL is defined  </li>
+<li><code>src/api/client.ts</code> — how every HTTP call gets the token  </li>
+<li><code>src/api/auth.ts</code> + <code>src/api/loginAuth.ts</code> — login contract  </li>
+<li><code>src/auth/AuthContext.tsx</code> — session lifecycle  </li>
+<li><code>app/_layout.tsx</code> — providers and auth gate  </li>
+<li><code>app/index.tsx</code> — first redirect  </li>
+<li><code>app/login.tsx</code> — sign-in UX and navigation after success  </li>
+<li><code>app/(tabs)/_layout.tsx</code> — tab shell  </li>
+<li><code>app/(tabs)/index.tsx</code> — home dashboard + role branching  </li>
+<li><code>src/menu.ts</code> — full list of deep links by role  </li>
+<li>Any feature you care about under <code>app/</code> + matching <code>src/api/*.ts</code>  </li>
+</ol>
+<p>For <strong>backend</strong> login implementation (Java):</p>
+<ul>
+<li><code>schoolsync-api/.../controller/AuthController.java</code></li>
+<li><code>schoolsync-api/.../service/AuthService.java</code></li>
+<li><code>schoolsync-common/.../dto/response/LoginResult.java</code> and <code>AuthResponse.java</code></li>
+</ul>
+<hr />
+<h2 id="quick-reference-auth-api-in-one-diagram">Quick reference: auth + API in one diagram</h2>
+<blockquote>
+<p><strong>Diagram (flow chart):</strong> The full interactive version is in <code>APP_GUIDE.md</code> under the same section. Summary:
+</p>
+</blockquote>
+<pre><code>flowchart TB
+    subgraph Phone[&quot;Mobile app&quot;]
+        UI[app/*.tsx screens]
+        CTX[AuthContext user + token]
+        SEC[SecureStore ss_token / ss_user]
+        AX[axios client.ts]
+        UI --&gt;…
+</code></pre>
+<hr />
+<p><em>Document version: aligned with Easool mobile on Expo SDK 53 (<code>schoolsync-app</code>). Update this guide when you add major navigation or auth changes.</em></p>
+</body>
+</html>
