@@ -1,13 +1,15 @@
 import { useCallback, useEffect, useState } from "react";
-import { Text, View } from "react-native";
-import { useRouter } from "expo-router";
-import { Button, Card, Chip, Loading, Message, Row, Screen, Title } from "../../src/ui";
+import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Stack, useFocusEffect, useRouter } from "expo-router";
+import { setStatusBarBackgroundColor, setStatusBarStyle } from "expo-status-bar";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Button, Chip, Message, Row, pretty } from "../../src/ui";
 import { useAuth } from "../../src/auth/AuthContext";
 import { getDashboardStats, DashboardStats } from "../../src/api/dashboard";
 import { getPendingCount } from "../../src/api/registrations";
 import { getMyAssignments, Assignment } from "../../src/api/studentRecords";
 import { errorMessage } from "../../src/api/client";
-import { displayName, greeting, longDate } from "../../src/lib/name";
+import { displayName, firstName, greeting, initials, longDate } from "../../src/lib/name";
 import NoticeStrip from "../../src/components/NoticeStrip";
 import SuperAdminHome from "../../src/screens/SuperAdminHome";
 import { colors } from "../../src/theme";
@@ -77,7 +79,21 @@ function Dashboard() {
 
   useEffect(() => { load(); }, [load]);
 
-  const refresh = async () => { await load(); setTick((t) => t + 1); };
+  const insets = useSafeAreaInsets();
+  // Light status-bar icons over the navy hero; restore the app default when leaving Home.
+  useFocusEffect(useCallback(() => {
+    setStatusBarStyle("light");
+    setStatusBarBackgroundColor(colors.navy, false);
+    return () => {
+      setStatusBarStyle("dark");
+      setStatusBarBackgroundColor(colors.canvas, false);
+    };
+  }, []));
+  const [refreshing, setRefreshing] = useState(false);
+  const onPullRefresh = async () => {
+    setRefreshing(true);
+    try { await load(); setTick((t) => t + 1); } finally { setRefreshing(false); }
+  };
 
   const startOfToday = new Date(new Date().toDateString());
   // Only what is still due, soonest first, capped at three.
@@ -88,103 +104,247 @@ function Dashboard() {
 
   const go = (to: string) => router.push(to as any);
 
+  const actions: Action[] = [
+    canMarkAttendance && { to: "/attendance/students", label: "Mark attendance", icon: "✓", tint: TINTS.green },
+    isCoordinator && { to: "/attendance/teachers", label: "Staff attendance", icon: "👥", tint: TINTS.blue },
+    isCoordinator && { to: "/substitution", label: "Substitution", icon: "↻", tint: TINTS.amber },
+    isCoordinator && { to: "/teacher-calendar", label: "Teacher calendar", icon: "🗓", tint: TINTS.violet },
+    (isCoordinator || isTeacher || isLeadership) && { to: "/records", label: "Records", icon: "▦", tint: TINTS.blue },
+    (role === "PRINCIPAL" || role === "SCHOOL_ADMIN") && { to: "/teachers/manage", label: "Teachers", icon: "🎓", tint: TINTS.violet },
+    canApprove && { to: "/approvals", label: "Requests", icon: "✉", tint: TINTS.rose, badge: pending },
+    isStudent && { to: "/my-assignments", label: "Assignments", icon: "✎", tint: TINTS.amber },
+    isStudent && { to: "/my-results", label: "Results", icon: "★", tint: TINTS.green },
+    { to: "/timetable", label: "Timetable", icon: "▥", tint: TINTS.navy },
+  ].filter(Boolean) as Action[];
+
   return (
-    <Screen onRefresh={refresh}>
-      <Title sub={longDate()}>{`${greeting()}, ${displayName(user?.name)}`}</Title>
-      {!!error && <Message m={{ type: "error", text: error }} />}
+    <>
+      <Stack.Screen options={{ headerShown: false }} />
+      <ScrollView
+        style={{ flex: 1, backgroundColor: colors.canvas }}
+        contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 16) + 8 }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onPullRefresh}
+          tintColor={colors.white} colors={[colors.navy]} progressViewOffset={insets.top} />}
+      >
+        {/* Hero */}
+        <View style={[st.hero, { paddingTop: insets.top + 18 }]}>
+          <View style={[st.blob, { width: 220, height: 220, top: -60, right: -70 }]} />
+          <View style={[st.blob, { width: 140, height: 140, top: 90, right: 60, opacity: 0.06 }]} />
+          <View style={[st.blob, { width: 90, height: 90, bottom: -30, left: -20, opacity: 0.07 }]} />
 
-      {loading ? <Loading /> : (
-        <>
-          {focus && <FocusPanel focus={focus} onGo={go} />}
+          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+            <Text style={st.heroDate}>{longDate()}</Text>
+            <Pressable onPress={() => go("/profile")} hitSlop={8} accessibilityLabel="My profile" style={st.avatar}>
+              <Text style={st.avatarText}>{initials(user?.name)}</Text>
+            </Pressable>
+          </View>
 
-          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
-            {isAdmin && (
-              <>
-                <Stat label="Total students" value={String(stats?.totalStudents ?? "—")} sub={`Across ${stats?.totalClasses ?? 0} classes`} />
-                <Stat label="Teachers present" value={`${stats?.teachersPresent ?? 0}/${stats?.totalTeachers ?? 0}`}
-                  tone={staffMarked(stats) ? "success" : "warning"} sub={staffMarked(stats) ? "Marked today" : "Not yet marked"} />
-                <Stat label="Absent teachers" value={String(stats?.teachersAbsent ?? 0)}
-                  tone={(stats?.teachersAbsent ?? 0) > 0 ? "danger" : "default"}
-                  sub={(stats?.teachersAbsent ?? 0) > 0 ? "Cover required" : "No cover required"} />
-                <Stat label="Total classes" value={String(stats?.totalClasses ?? 0)} sub="Active this year" />
-              </>
-            )}
-            {isTeacher && (
-              <>
-                <Stat label="My periods" value={String(stats?.myClassCount ?? 0)} sub="Assigned to you" />
-                <Stat label="Attendance marked" value={`${stats?.classesAttMarked ?? 0}/${stats?.myClassCount ?? 0}`}
-                  tone={teacherDone(stats) ? "success" : "warning"} sub={teacherDone(stats) ? "All done today" : "Still outstanding"} />
-              </>
-            )}
-            {isStudent && (
-              <Stat label="My attendance"
-                value={stats?.myAttendancePercentage != null ? `${stats.myAttendancePercentage}%` : "—"}
-                tone={(stats?.myAttendancePercentage ?? 0) >= 75 ? "success" : "danger"} sub="Minimum required is 75%" />
+          <Text style={st.heroGreeting}>{greeting()},</Text>
+          <Text style={st.heroName} numberOfLines={1}>{firstName(user?.name) || displayName(user?.name)}</Text>
+
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 12 }}>
+            {!!role && <View style={st.heroPill}><Text style={st.heroPillText}>{pretty(role)}</Text></View>}
+            {!!user?.schoolName && (
+              <View style={[st.heroPill, { maxWidth: "75%" }]}>
+                <Text style={st.heroPillText} numberOfLines={1}>{user.schoolName}</Text>
+              </View>
             )}
           </View>
-        </>
-      )}
-
-      <NoticeStrip refreshKey={tick} />
-
-      {isStudent && upcoming.length > 0 && (
-        <Card title="Coming up">
-          {upcoming.map((a) => (
-            <Row key={a.id} style={{ justifyContent: "space-between", paddingVertical: 4 }}>
-              <Text numberOfLines={1} style={{ flex: 1, fontSize: 13.5, color: colors.inkMuted }}>
-                <Text style={{ fontWeight: "700", color: colors.ink }}>{a.subject}</Text>{` · ${a.title}`}
-              </Text>
-              <Text style={{ fontSize: 12, color: colors.inkSubtle }}>{dueLabel(a.dueDate)}</Text>
-            </Row>
-          ))}
-          <Button small variant="secondary" onPress={() => go("/my-assignments")}>All assignments</Button>
-        </Card>
-      )}
-
-      <Card title="Quick actions">
-        <View style={{ gap: 8 }}>
-          {canMarkAttendance && <Button small variant="secondary" onPress={() => go("/attendance/students")}>Mark attendance</Button>}
-          {isCoordinator && <Button small variant="secondary" onPress={() => go("/attendance/teachers")}>Staff attendance</Button>}
-          {isCoordinator && <Button small variant="secondary" onPress={() => go("/teacher-calendar")}>Teacher calendar</Button>}
-          {(isCoordinator || isTeacher || isLeadership) && <Button small variant="secondary" onPress={() => go("/records")}>Records</Button>}
-          {(role === "PRINCIPAL" || role === "SCHOOL_ADMIN") && <Button small variant="secondary" onPress={() => go("/teachers/manage")}>Teacher onboarding</Button>}
-          {canApprove && <Button small variant="secondary" onPress={() => go("/approvals")}>{`Account requests${pending > 0 ? ` (${pending})` : ""}`}</Button>}
-          <Button small variant="secondary" onPress={() => go("/timetable")}>View timetable</Button>
         </View>
-      </Card>
-    </Screen>
+
+        <View style={{ paddingHorizontal: 16, gap: 16, marginTop: -36 }}>
+          {/* KPI tiles */}
+          {loading ? (
+            <View style={[st.surface, { padding: 28, alignItems: "center" }]}><ActivityIndicator color={colors.navy} /></View>
+          ) : (
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12 }}>
+              {isAdmin && (
+                <>
+                  <Stat icon="🎒" tint={TINTS.blue} label="Students" value={String(stats?.totalStudents ?? "—")}
+                    sub={`Across ${stats?.totalClasses ?? 0} classes`} />
+                  <Stat icon="✓" tint={staffMarked(stats) ? TINTS.green : TINTS.amber} label="Teachers present"
+                    value={`${stats?.teachersPresent ?? 0}/${stats?.totalTeachers ?? 0}`}
+                    sub={staffMarked(stats) ? "Marked today" : "Not yet marked"} />
+                  <Stat icon="⚠" tint={(stats?.teachersAbsent ?? 0) > 0 ? TINTS.rose : TINTS.slate} label="Absent teachers"
+                    value={String(stats?.teachersAbsent ?? 0)}
+                    sub={(stats?.teachersAbsent ?? 0) > 0 ? "Cover required" : "No cover required"} />
+                  <Stat icon="🏫" tint={TINTS.violet} label="Classes" value={String(stats?.totalClasses ?? 0)} sub="Active this year" />
+                </>
+              )}
+              {isTeacher && (
+                <>
+                  <Stat icon="▥" tint={TINTS.blue} label="My periods" value={String(stats?.myClassCount ?? 0)} sub="Assigned to you" />
+                  <Stat icon="✓" tint={teacherDone(stats) ? TINTS.green : TINTS.amber} label="Attendance marked"
+                    value={`${stats?.classesAttMarked ?? 0}/${stats?.myClassCount ?? 0}`}
+                    sub={teacherDone(stats) ? "All done today" : "Still outstanding"} />
+                </>
+              )}
+              {isStudent && (
+                <Stat wide icon="📊" tint={(stats?.myAttendancePercentage ?? 0) >= 75 ? TINTS.green : TINTS.rose}
+                  label="My attendance"
+                  value={stats?.myAttendancePercentage != null ? `${stats.myAttendancePercentage}%` : "—"}
+                  sub="Minimum required is 75%"
+                  progress={stats?.myAttendancePercentage ?? undefined} />
+              )}
+            </View>
+          )}
+
+          {!!error && <Message m={{ type: "error", text: error }} />}
+
+          {!loading && focus && <FocusPanel focus={focus} onGo={go} />}
+
+          {/* Quick actions */}
+          <View>
+            <Text style={st.section}>Quick actions</Text>
+            <View style={st.grid}>
+              {actions.map((a) => (
+                <Pressable key={a.to} onPress={() => go(a.to)}
+                  style={({ pressed }) => [st.surface, st.action, pressed && { transform: [{ scale: 0.97 }], opacity: 0.9 }]}>
+                  <View style={[st.iconBubble, { backgroundColor: a.tint.bg }]}>
+                    <Text style={{ fontSize: 18, color: a.tint.fg }}>{a.icon}</Text>
+                    {!!a.badge && a.badge > 0 && (
+                      <View style={st.badge}><Text style={st.badgeText}>{a.badge > 99 ? "99+" : a.badge}</Text></View>
+                    )}
+                  </View>
+                  <Text style={st.actionLabel} numberOfLines={2}>{a.label}</Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+
+          {isStudent && upcoming.length > 0 && (
+            <View style={[st.surface, { padding: 16, gap: 10 }]}>
+              <Row style={{ justifyContent: "space-between" }}>
+                <Text style={st.cardHeading}>Coming up</Text>
+                <Pressable onPress={() => go("/my-assignments")}><Text style={st.link}>View all</Text></Pressable>
+              </Row>
+              {upcoming.map((a) => (
+                <Row key={a.id} style={{ gap: 12 }}>
+                  <View style={[st.dot, { backgroundColor: TINTS.amber.fg }]} />
+                  <View style={{ flex: 1 }}>
+                    <Text numberOfLines={1} style={{ fontSize: 14, fontWeight: "600", color: colors.ink }}>{a.title}</Text>
+                    <Text style={{ fontSize: 12, color: colors.inkMuted }}>{a.subject}</Text>
+                  </View>
+                  <Text style={st.duePill}>{dueLabel(a.dueDate)}</Text>
+                </Row>
+              ))}
+            </View>
+          )}
+
+          <NoticeStrip refreshKey={tick} />
+        </View>
+      </ScrollView>
+    </>
   );
 }
+
+type Tint = { bg: string; fg: string };
+const TINTS = {
+  navy: { bg: colors.navy50, fg: colors.navy },
+  blue: { bg: "#E8F1FE", fg: "#2563EB" },
+  green: { bg: "#E6F4EC", fg: "#1E8E5A" },
+  amber: { bg: "#FDF3E1", fg: "#B7791F" },
+  rose: { bg: "#FDECEC", fg: "#C0392B" },
+  violet: { bg: "#F1ECFD", fg: "#6D4AE0" },
+  slate: { bg: "#EEF0F4", fg: "#4A5168" },
+} satisfies Record<string, Tint>;
+
+type Action = { to: string; label: string; icon: string; tint: Tint; badge?: number };
 
 function FocusPanel({ focus, onGo }: { focus: Focus; onGo: (to: string) => void }) {
   const calm = focus.tone === "calm";
+  const accent = calm ? TINTS.green : TINTS.amber;
   return (
-    <Card style={{ borderColor: calm ? colors.line : colors.navy, borderWidth: calm ? 1 : 2 }}>
-      <Chip tone={calm ? "green" : "amber"}>{focus.kicker}</Chip>
-      <Text style={{ fontSize: 17, fontWeight: "700", color: colors.ink }}>{focus.title}</Text>
-      <Text style={{ fontSize: 13, color: colors.inkMuted, lineHeight: 19 }}>{focus.body}</Text>
-      {focus.figure != null && (
-        <Row>
-          <Text style={{ fontSize: 28, fontWeight: "700", color: colors.navy }}>{String(focus.figure)}</Text>
-          {!!focus.figureCaption && <Text style={{ fontSize: 12, color: colors.inkSubtle }}>{focus.figureCaption}</Text>}
+    <View style={[st.surface, { overflow: "hidden" }]}>
+      <View style={{ height: 4, backgroundColor: accent.fg }} />
+      <View style={{ padding: 16, gap: 8 }}>
+        <Row style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
+          <View style={{ flex: 1, gap: 6 }}>
+            <Chip tone={calm ? "green" : "amber"}>{focus.kicker}</Chip>
+            <Text style={{ fontSize: 17, fontWeight: "700", color: colors.ink }}>{focus.title}</Text>
+          </View>
+          {focus.figure != null && (
+            <View style={[st.figure, { backgroundColor: accent.bg }]}>
+              <Text style={{ fontSize: 20, fontWeight: "800", color: accent.fg }}>{String(focus.figure)}</Text>
+              {!!focus.figureCaption && <Text style={{ fontSize: 10, color: accent.fg, textAlign: "center" }}>{focus.figureCaption}</Text>}
+            </View>
+          )}
         </Row>
-      )}
-      {focus.primary && <Button onPress={() => onGo(focus.primary!.to)}>{focus.primary.label}</Button>}
-      {focus.secondary && <Button variant="secondary" onPress={() => onGo(focus.secondary!.to)}>{focus.secondary.label}</Button>}
-    </Card>
-  );
-}
-
-function Stat({ label, value, sub, tone = "default" }: { label: string; value: string; sub: string; tone?: "default" | "success" | "warning" | "danger" }) {
-  const c = tone === "success" ? "#1E8E5A" : tone === "warning" ? "#B7791F" : tone === "danger" ? colors.danger : colors.ink;
-  return (
-    <View style={{ width: "48%", flexGrow: 1, backgroundColor: colors.white, borderRadius: 12, padding: 14, borderWidth: 1, borderColor: colors.line }}>
-      <Text style={{ fontSize: 11, fontWeight: "600", color: colors.inkMuted, textTransform: "uppercase" }}>{label}</Text>
-      <Text style={{ fontSize: 26, fontWeight: "700", color: c, marginTop: 4 }}>{value}</Text>
-      <Text style={{ fontSize: 11.5, color: colors.inkSubtle, marginTop: 2 }}>{sub}</Text>
+        <Text style={{ fontSize: 13, color: colors.inkMuted, lineHeight: 19 }}>{focus.body}</Text>
+        {(focus.primary || focus.secondary) && (
+          <View style={{ gap: 8, marginTop: 4 }}>
+            {focus.primary && <Button onPress={() => onGo(focus.primary!.to)}>{focus.primary.label}</Button>}
+            {focus.secondary && <Button variant="secondary" onPress={() => onGo(focus.secondary!.to)}>{focus.secondary.label}</Button>}
+          </View>
+        )}
+      </View>
     </View>
   );
 }
+
+function Stat({ icon, tint, label, value, sub, wide, progress }: {
+  icon: string; tint: Tint; label: string; value: string; sub: string; wide?: boolean; progress?: number;
+}) {
+  return (
+    <View style={[st.surface, st.stat, wide && { width: "100%" }]}>
+      <Row style={{ justifyContent: "space-between" }}>
+        <View style={[st.iconBubble, { width: 34, height: 34, borderRadius: 10, backgroundColor: tint.bg }]}>
+          <Text style={{ fontSize: 15, color: tint.fg }}>{icon}</Text>
+        </View>
+      </Row>
+      <Text style={{ fontSize: 26, fontWeight: "800", color: colors.ink, marginTop: 10 }}>{value}</Text>
+      <Text style={{ fontSize: 12.5, fontWeight: "600", color: colors.inkMuted, marginTop: 2 }}>{label}</Text>
+      <Text style={{ fontSize: 11.5, color: tint.fg, marginTop: 4, fontWeight: "500" }}>{sub}</Text>
+      {progress != null && (
+        <View style={{ height: 6, borderRadius: 3, backgroundColor: colors.line, marginTop: 10, overflow: "hidden" }}>
+          <View style={{ width: `${Math.max(0, Math.min(100, progress))}%`, height: "100%", backgroundColor: tint.fg }} />
+        </View>
+      )}
+    </View>
+  );
+}
+
+const shadow = {
+  shadowColor: "#141A2E", shadowOpacity: 0.06, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 2,
+};
+
+const st = StyleSheet.create({
+  hero: {
+    backgroundColor: colors.navy, paddingHorizontal: 20, paddingBottom: 56,
+    borderBottomLeftRadius: 28, borderBottomRightRadius: 28, overflow: "hidden",
+  },
+  blob: { position: "absolute", borderRadius: 999, backgroundColor: "#FFFFFF", opacity: 0.08 },
+  heroDate: { color: "rgba(255,255,255,0.75)", fontSize: 12.5, fontWeight: "500" },
+  heroGreeting: { color: "rgba(255,255,255,0.85)", fontSize: 16, marginTop: 18 },
+  heroName: { color: colors.white, fontSize: 28, fontWeight: "800", marginTop: 2, letterSpacing: 0.2 },
+  heroPill: { backgroundColor: "rgba(255,255,255,0.15)", borderRadius: 99, paddingHorizontal: 10, paddingVertical: 4 },
+  heroPillText: { color: colors.white, fontSize: 11.5, fontWeight: "600" },
+  avatar: {
+    width: 42, height: 42, borderRadius: 21, backgroundColor: colors.white, alignItems: "center", justifyContent: "center",
+    borderWidth: 2, borderColor: "rgba(255,255,255,0.4)",
+  },
+  avatarText: { color: colors.navy, fontWeight: "800", fontSize: 15 },
+  surface: { backgroundColor: colors.white, borderRadius: 16, borderWidth: 1, borderColor: colors.line, ...shadow },
+  stat: { flexGrow: 1, flexBasis: "45%", padding: 14 },
+  section: { fontSize: 15, fontWeight: "700", color: colors.ink, marginBottom: 10 },
+  grid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
+  action: { flexBasis: "30%", flexGrow: 1, maxWidth: "32%", paddingVertical: 14, paddingHorizontal: 8, alignItems: "center", gap: 8 },
+  actionLabel: { fontSize: 12, fontWeight: "600", color: colors.ink, textAlign: "center" },
+  iconBubble: { width: 44, height: 44, borderRadius: 14, alignItems: "center", justifyContent: "center" },
+  badge: {
+    position: "absolute", top: -4, right: -6, minWidth: 18, height: 18, borderRadius: 9, paddingHorizontal: 4,
+    backgroundColor: colors.danger, alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: colors.white,
+  },
+  badgeText: { color: colors.white, fontSize: 9.5, fontWeight: "800" },
+  figure: { borderRadius: 12, paddingHorizontal: 10, paddingVertical: 8, alignItems: "center", minWidth: 64 },
+  cardHeading: { fontSize: 15, fontWeight: "700", color: colors.ink },
+  link: { fontSize: 12.5, fontWeight: "600", color: colors.navy },
+  dot: { width: 8, height: 8, borderRadius: 4 },
+  duePill: {
+    fontSize: 11, fontWeight: "600", color: "#B7791F", backgroundColor: "#FDF3E1",
+    paddingHorizontal: 8, paddingVertical: 3, borderRadius: 99, overflow: "hidden",
+  },
+});
 
 function dueLabel(iso: string): string {
   const today = new Date(new Date().toDateString()).getTime();
