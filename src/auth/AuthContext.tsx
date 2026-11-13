@@ -55,9 +55,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const persistUser = useCallback(async (auth: AuthPayload) => {
+    await SecureStore.setItemAsync(TOKEN_KEY, auth.token);
     let u = userFromAuth(auth);
     u = await hydrateSchoolName(u);
-    await SecureStore.setItemAsync(TOKEN_KEY, auth.token);
     await SecureStore.setItemAsync(USER_KEY, JSON.stringify(u));
     setUser(u);
   }, [hydrateSchoolName]);

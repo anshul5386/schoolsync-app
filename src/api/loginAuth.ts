@@ -37,10 +37,18 @@ export function extractLoginPayload(res: AxiosResponse): LoginExtract {
       studentOptions: data.studentOptions || [],
     };
   }
-  const auth = data?.auth ?? data;
-  if (!auth?.token) {
+  const raw = data?.auth ?? data;
+  if (!raw?.token) {
     throw new Error(body.message || "Login failed — no token in response.");
   }
+  const auth: AuthPayload = {
+    token: String(raw.token),
+    userId: String(raw.userId ?? ""),
+    schoolId: raw.schoolId != null ? String(raw.schoolId) : "",
+    role: String(raw.role ?? ""),
+    name: String(raw.name ?? ""),
+    schoolName: raw.schoolName != null ? String(raw.schoolName) : undefined,
+  };
   return { kind: "complete", auth };
 }
 

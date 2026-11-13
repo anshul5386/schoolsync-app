@@ -5,6 +5,7 @@ import { StatusBar } from "expo-status-bar";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { AuthProvider, useAuth } from "../src/auth/AuthContext";
+import { ErrorBoundary } from "../src/components/ErrorBoundary";
 import { queryClient } from "../src/queryClient";
 import { colors } from "../src/theme";
 
@@ -23,9 +24,6 @@ function Gate() {
       router.replace("/contact");
       return;
     }
-    if (user && (PUBLIC_ROUTES.has(route) || route === "index")) {
-      router.replace("/(tabs)");
-    }
   }, [user, loading, segments, router]);
 
   if (loading) {
@@ -36,20 +34,16 @@ function Gate() {
     );
   }
   return (
-    <Stack screenOptions={{
-      headerStyle: { backgroundColor: colors.white },
-      headerTitleStyle: { color: colors.ink },
-      headerTintColor: colors.navy,
-      headerBackTitle: "Back",
-      headerShadowVisible: true,
-      contentStyle: { backgroundColor: colors.canvas },
-      animation: "slide_from_right",
-    }}>
-      <Stack.Screen name="index" options={{ headerShown: false }} />
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen name="contact" options={{ headerShown: false }} />
-      <Stack.Screen name="login" options={{ headerShown: false }} />
-    </Stack>
+    <ErrorBoundary>
+      <Stack screenOptions={{
+        headerStyle: { backgroundColor: colors.white },
+        headerTitleStyle: { color: colors.ink },
+        headerTintColor: colors.navy,
+        headerBackTitle: "Back",
+        headerShadowVisible: true,
+        contentStyle: { backgroundColor: colors.canvas },
+      }} />
+    </ErrorBoundary>
   );
 }
 
