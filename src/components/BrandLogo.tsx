@@ -10,13 +10,12 @@ type Props = {
 export default function BrandLogo({ width, style }: Props) {
   const { width: screenW } = useWindowDimensions();
   const w = width ?? Math.min(screenW - 80, 220);
-  const h = w * 0.28;
-
   return (
-    <View style={[s.wrap, style]} accessibilityRole="image" accessibilityLabel="Easool">
+    <View style={[s.wrap, style]}>
       <Image
         source={require("../../assets/logo.png")}
-        style={{ width: w, height: h }}
+        accessibilityLabel="Easool"
+        style={{ width: w, height: w * 0.28 }}
         resizeMode="contain"
       />
     </View>

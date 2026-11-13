@@ -2,7 +2,11 @@ import { Component, ErrorInfo, ReactNode } from "react";
 import { Pressable, Text, View } from "react-native";
 import { colors } from "../theme";
 
-type Props = { children: ReactNode; onRetry?: () => void };
+type Props = {
+  children: ReactNode;
+  /** Clears session and restarts on a safe screen (avoids tabs crash loop). */
+  onSignOut?: () => void | Promise<void>;
+};
 type State = { error: Error | null };
 
 /** Catches render crashes (e.g. after login) so the app shows a message instead of closing. */
@@ -14,7 +18,7 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    if (__DEV__) console.error("ErrorBoundary", error, info.componentStack);
+    console.error("ErrorBoundary", error.message, info.componentStack);
   }
 
   render() {
@@ -25,17 +29,28 @@ export class ErrorBoundary extends Component<Props, State> {
           <Text style={{ fontSize: 13, color: colors.inkMuted, marginBottom: 16 }}>
             {this.state.error.message || "The app hit an unexpected error."}
           </Text>
-          {__DEV__ && this.state.error.stack ? (
-            <Text style={{ fontSize: 10, color: colors.inkSubtle, marginBottom: 12 }} numberOfLines={8}>
-              {this.state.error.stack.split("\n").slice(0, 6).join("\n")}
+          {this.state.error.stack ? (
+            <Text style={{ fontSize: 10, color: colors.inkSubtle, marginBottom: 12 }} numberOfLines={10}>
+              {this.state.error.stack.split("\n").slice(0, 8).join("\n")}
             </Text>
           ) : null}
           <Pressable
             onPress={() => this.setState({ error: null })}
-            style={{ backgroundColor: colors.navy, paddingVertical: 12, borderRadius: 10, alignItems: "center" }}
+            style={{ backgroundColor: colors.navy, paddingVertical: 12, borderRadius: 10, alignItems: "center", marginBottom: 10 }}
           >
             <Text style={{ color: colors.white, fontWeight: "600" }}>Try again</Text>
           </Pressable>
+          {this.props.onSignOut ? (
+            <Pressable
+              onPress={async () => {
+                await this.props.onSignOut?.();
+                this.setState({ error: null });
+              }}
+              style={{ paddingVertical: 12, borderRadius: 10, alignItems: "center", borderWidth: 1, borderColor: colors.line }}
+            >
+              <Text style={{ color: colors.inkMuted, fontWeight: "600" }}>Sign out and start over</Text>
+            </Pressable>
+          ) : null}
         </View>
       );
     }
