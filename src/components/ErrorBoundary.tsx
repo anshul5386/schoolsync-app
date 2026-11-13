@@ -25,6 +25,11 @@ export class ErrorBoundary extends Component<Props, State> {
           <Text style={{ fontSize: 13, color: colors.inkMuted, marginBottom: 16 }}>
             {this.state.error.message || "The app hit an unexpected error."}
           </Text>
+          {__DEV__ && this.state.error.stack ? (
+            <Text style={{ fontSize: 10, color: colors.inkSubtle, marginBottom: 12 }} numberOfLines={8}>
+              {this.state.error.stack.split("\n").slice(0, 6).join("\n")}
+            </Text>
+          ) : null}
           <Pressable
             onPress={() => this.setState({ error: null })}
             style={{ backgroundColor: colors.navy, paddingVertical: 12, borderRadius: 10, alignItems: "center" }}

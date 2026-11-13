@@ -43,11 +43,11 @@ export default function TabsLayout() {
       <Tabs.Screen name="notices" options={{ title: "Notices", tabBarIcon: icon("▤") }} />
       <Tabs.Screen
         name="notifications"
-        options={{
-          title: "Alerts",
-          tabBarIcon: icon("🔔"),
-          ...(showAlerts ? {} : { tabBarButton: () => null, href: undefined }),
-        }}
+        options={
+          showAlerts
+            ? { title: "Alerts", tabBarIcon: icon("🔔") }
+            : { title: "Alerts", tabBarIcon: icon("🔔"), href: null }
+        }
       />
       <Tabs.Screen name="menu" options={{ title: "Menu", tabBarIcon: icon("☰") }} />
     </Tabs>
