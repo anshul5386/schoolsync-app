@@ -26,7 +26,8 @@ function Gate() {
     }
     // One place post-login navigation (avoids racing login.tsx with tabs mount).
     if (user && (PUBLIC_ROUTES.has(route) || route === "index")) {
-      router.replace("/(tabs)");
+      const id = requestAnimationFrame(() => router.replace("/(tabs)"));
+      return () => cancelAnimationFrame(id);
     }
   }, [user, loading, segments, router]);
 
@@ -38,16 +39,14 @@ function Gate() {
     );
   }
   return (
-    <ErrorBoundary>
-      <Stack screenOptions={{
-        headerStyle: { backgroundColor: colors.white },
-        headerTitleStyle: { color: colors.ink },
-        headerTintColor: colors.navy,
-        headerBackTitle: "Back",
-        headerShadowVisible: true,
-        contentStyle: { backgroundColor: colors.canvas },
-      }} />
-    </ErrorBoundary>
+    <Stack screenOptions={{
+      headerStyle: { backgroundColor: colors.white },
+      headerTitleStyle: { color: colors.ink },
+      headerTintColor: colors.navy,
+      headerBackTitle: "Back",
+      headerShadowVisible: true,
+      contentStyle: { backgroundColor: colors.canvas },
+    }} />
   );
 }
 
@@ -57,7 +56,9 @@ export default function RootLayout() {
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <StatusBar style="dark" translucent={false} backgroundColor={colors.canvas} />
-          <Gate />
+          <ErrorBoundary>
+            <Gate />
+          </ErrorBoundary>
         </AuthProvider>
       </QueryClientProvider>
     </SafeAreaProvider>
