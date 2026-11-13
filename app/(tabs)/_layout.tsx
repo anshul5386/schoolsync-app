@@ -1,15 +1,20 @@
 import type { ComponentProps } from "react";
 import { Tabs } from "expo-router";
-import { ActivityIndicator, Text, View } from "react-native";
+import type { BottomTabBarButtonProps } from "@react-navigation/bottom-tabs";
 import { PlatformPressable } from "@react-navigation/elements";
+import { ActivityIndicator, Pressable, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "../../src/auth/AuthContext";
 import { colors } from "../../src/theme";
 
-/** React Navigation expects a pressable renderer, not `() => null` (crashes: "undefined is not a function"). */
-const TabBarButton = (props: ComponentProps<typeof PlatformPressable>) => (
-  <PlatformPressable {...props} />
-);
+/**
+ * Expo Router replaces tabBarButton when `href: null` is used (breaks on Android).
+ * Always supply a real pressable renderer on every tab.
+ */
+function TabBarButton(props: BottomTabBarButtonProps) {
+  const PressableImpl = PlatformPressable ?? Pressable;
+  return <PressableImpl {...(props as ComponentProps<typeof PressableImpl>)} />;
+}
 
 const tabIcon = (glyph: string) =>
   ({ color, size }: { color: string; size: number }) => (
