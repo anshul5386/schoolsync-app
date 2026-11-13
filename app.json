@@ -5,14 +5,24 @@
     "scheme": "easool",
     "version": "0.1.0",
     "orientation": "portrait",
+    "icon": "./assets/logo.png",
     "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/logo.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FFFFFF"
+    },
     "owner": "anshuleasools-team",
     "plugins": ["expo-router", "expo-secure-store"],
     "experiments": { "typedRoutes": true },
     "ios": { "bundleIdentifier": "in.easool.app", "supportsTablet": true },
     "android": {
       "package": "in.easool.app",
-      "softwareKeyboardLayoutMode": "resize"
+      "softwareKeyboardLayoutMode": "resize",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/logo.png",
+        "backgroundColor": "#FFFFFF"
+      }
     },
     "extra": {
       "eas": {

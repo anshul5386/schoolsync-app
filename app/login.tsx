@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { PasswordField } from "../src/ui";
@@ -8,6 +8,7 @@ import { loginWithPassword, selectStudent } from "../src/api/auth";
 import { extractLoginPayload, loginErrorMessage, type StudentLoginOption } from "../src/api/loginAuth";
 import { errorMessage } from "../src/api/client";
 import { isApiConfigured, API_BASE_URL } from "../src/config";
+import BrandLogo from "../src/components/BrandLogo";
 import { colors } from "../src/theme";
 
 export default function LoginScreen() {
@@ -23,8 +24,10 @@ export default function LoginScreen() {
   } | null>(null);
 
   const finishLogin = async (auth: Parameters<typeof applySession>[0]) => {
+    Keyboard.dismiss();
     await applySession(auth);
-    router.replace("/");
+    // Explicit tab route avoids Android flicker / app appearing to “minimize” after auth.
+    setTimeout(() => router.replace("/(tabs)"), 0);
   };
 
   const signIn = async () => {
@@ -71,7 +74,7 @@ export default function LoginScreen() {
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled">
       <View style={s.card}>
-        <Text style={s.brand}>Easool</Text>
+        <BrandLogo width={200} style={{ marginBottom: 16 }} />
         <Text style={s.sub}>Sign in to your school account</Text>
 
         {!studentPick ? (
@@ -90,8 +93,10 @@ export default function LoginScreen() {
               <Text style={s.buttonText}>{busy ? "Signing in…" : "Sign in"}</Text>
             </Pressable>
 
-            <Pressable onPress={() => router.push("/register")} style={{ marginTop: 16, alignItems: "center" }}>
-              <Text style={{ color: colors.navy, fontSize: 13, fontWeight: "600" }}>New here? Request an account</Text>
+            <Pressable onPress={() => router.push("/contact")} style={{ marginTop: 16, alignItems: "center" }}>
+              <Text style={{ color: colors.inkMuted, fontSize: 13 }}>
+                Need access? <Text style={{ color: colors.navy, fontWeight: "600" }}>Contact us</Text>
+              </Text>
             </Pressable>
           </>
         ) : (
@@ -129,8 +134,7 @@ const s = StyleSheet.create({
   page: { flex: 1, backgroundColor: colors.canvas },
   scroll: { flexGrow: 1, justifyContent: "center", padding: 24, paddingVertical: 32 },
   card: { backgroundColor: colors.white, borderRadius: 16, padding: 24, borderWidth: 1, borderColor: colors.line },
-  brand: { fontSize: 26, fontWeight: "800", color: colors.ink, textAlign: "center" },
-  sub: { fontSize: 14, color: colors.inkMuted, textAlign: "center", marginTop: 4, marginBottom: 20 },
+  sub: { fontSize: 14, color: colors.inkMuted, textAlign: "center", marginBottom: 20 },
   label: { fontSize: 11, fontWeight: "600", color: colors.inkSubtle, marginBottom: 4, textTransform: "uppercase" },
   input: { borderWidth: 1, borderColor: colors.line, borderRadius: 10, padding: 12, marginBottom: 14, fontSize: 15 },
   button: { backgroundColor: colors.navy, borderRadius: 10, paddingVertical: 14, alignItems: "center", marginTop: 4 },
