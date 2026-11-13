@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { useEffect, useState } from "react";
+import { InteractionManager, Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { PasswordField } from "../src/ui";
@@ -12,8 +12,17 @@ import BrandLogo from "../src/components/BrandLogo";
 import { colors } from "../src/theme";
 
 export default function LoginScreen() {
-  const { applySession } = useAuth();
-  const router = useRouter(); // contact link + student back only; post-login nav is in root Gate
+  const { user, applySession } = useAuth();
+  const router = useRouter();
+
+  /** After applySession (or existing session on this screen), open home once auth state is ready. */
+  useEffect(() => {
+    if (!user) return;
+    const task = InteractionManager.runAfterInteractions(() => {
+      router.replace("/(tabs)");
+    });
+    return () => task.cancel();
+  }, [user, router]);
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);

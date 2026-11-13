@@ -13,7 +13,7 @@ const PUBLIC_ROUTES = new Set(["contact", "login", "register"]);
 
 /** Signed-out users see contact/login only; signed-in users land in the app. */
 function Gate() {
-  const { user, loading } = useAuth();
+  const { user, loading, logout } = useAuth();
   const segments = useSegments();
   const router = useRouter();
 
@@ -24,8 +24,8 @@ function Gate() {
       router.replace("/contact");
       return;
     }
-    // One place post-login navigation (avoids racing login.tsx with tabs mount).
-    if (user && (PUBLIC_ROUTES.has(route) || route === "index")) {
+    // Post-login: login.tsx navigates after applySession (not here — avoids racing the tab bar).
+    if (user && (route === "contact" || route === "register" || route === "index")) {
       const id = requestAnimationFrame(() => router.replace("/(tabs)"));
       return () => cancelAnimationFrame(id);
     }
@@ -39,14 +39,28 @@ function Gate() {
     );
   }
   return (
-    <Stack screenOptions={{
-      headerStyle: { backgroundColor: colors.white },
-      headerTitleStyle: { color: colors.ink },
-      headerTintColor: colors.navy,
-      headerBackTitle: "Back",
-      headerShadowVisible: true,
-      contentStyle: { backgroundColor: colors.canvas },
-    }} />
+    <ErrorBoundary
+      onSignOut={async () => {
+        await logout();
+        router.replace("/contact");
+      }}
+    >
+      <Stack screenOptions={{
+        headerStyle: { backgroundColor: colors.white },
+        headerTitleStyle: { color: colors.ink },
+        headerTintColor: colors.navy,
+        headerBackTitle: "Back",
+        headerShadowVisible: true,
+        contentStyle: { backgroundColor: colors.canvas },
+        animation: "slide_from_right",
+      }}>
+        <Stack.Screen name="index" options={{ headerShown: false }} />
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="contact" options={{ headerShown: false }} />
+        <Stack.Screen name="login" options={{ headerShown: false }} />
+        <Stack.Screen name="register" options={{ headerShown: false }} />
+      </Stack>
+    </ErrorBoundary>
   );
 }
 
@@ -56,9 +70,7 @@ export default function RootLayout() {
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <StatusBar style="dark" translucent={false} backgroundColor={colors.canvas} />
-          <ErrorBoundary>
-            <Gate />
-          </ErrorBoundary>
+          <Gate />
         </AuthProvider>
       </QueryClientProvider>
     </SafeAreaProvider>
