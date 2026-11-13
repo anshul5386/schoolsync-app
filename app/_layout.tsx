@@ -11,7 +11,10 @@ import { colors } from "../src/theme";
 
 const PUBLIC_ROUTES = new Set(["contact", "login", "register"]);
 
-/** Signed-out users see contact/login only; signed-in users land in the app. */
+/**
+ * Auth gate: marketing routes for guests, "/" (tab home) for signed-in users.
+ * Post-login navigation is only here — no Redirect to "/(tabs)" (that path breaks linking).
+ */
 function Gate() {
   const { user, loading, logout } = useAuth();
   const segments = useSegments();
@@ -19,18 +22,16 @@ function Gate() {
 
   useEffect(() => {
     if (loading) return;
+
     const route = String(segments[0] ?? "");
-    if (!user && !PUBLIC_ROUTES.has(route) && route !== "index") {
+
+    if (!user && !PUBLIC_ROUTES.has(route)) {
       router.replace("/contact");
       return;
     }
-    // Signed-in users should not stay on marketing/auth routes (incl. after login).
-    if (
-      user &&
-      (route === "contact" || route === "register" || route === "index")
-    ) {
-      const id = requestAnimationFrame(() => router.replace("/(tabs)"));
-      return () => cancelAnimationFrame(id);
+
+    if (user && PUBLIC_ROUTES.has(route)) {
+      router.replace("/");
     }
   }, [user, loading, segments, router]);
 
@@ -41,6 +42,7 @@ function Gate() {
       </View>
     );
   }
+
   return (
     <ErrorBoundary
       onSignOut={async () => {
@@ -58,12 +60,7 @@ function Gate() {
           contentStyle: { backgroundColor: colors.canvas },
           animation: "slide_from_right",
         }}
-      >
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="contact" options={{ headerShown: false }} />
-        <Stack.Screen name="login" options={{ headerShown: false }} />
-        <Stack.Screen name="index" options={{ headerShown: false }} />
-      </Stack>
+      />
     </ErrorBoundary>
   );
 }
