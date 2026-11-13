@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { InteractionManager, Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { PasswordField } from "../src/ui";
@@ -26,7 +26,9 @@ export default function LoginScreen() {
   const finishLogin = async (auth: Parameters<typeof applySession>[0]) => {
     Keyboard.dismiss();
     await applySession(auth);
-    // Root Gate redirects signed-in users to /(tabs); keep navigation in one place to avoid Android crashes.
+    InteractionManager.runAfterInteractions(() => {
+      router.replace("/(tabs)");
+    });
   };
 
   const signIn = async () => {
