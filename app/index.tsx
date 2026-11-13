@@ -19,7 +19,7 @@ export default function Index() {
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      {user ? <Redirect href="/(tabs)/index" /> : <Redirect href="/contact" />}
+      {user ? <Redirect href="/(tabs)" /> : <Redirect href="/contact" />}
     </>
   );
 }

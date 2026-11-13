@@ -1,12 +1,12 @@
 import { Tabs } from "expo-router";
-
-export const unstable_settings = {
-  initialRouteName: "index",
-};
 import { ActivityIndicator, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "../../src/auth/AuthContext";
 import { colors } from "../../src/theme";
+
+export const unstable_settings = {
+  initialRouteName: "index",
+};
 
 const tabBarIcon = (glyph: string) =>
   ({ color, size }: { color: string; size?: number }) => (
@@ -54,12 +54,7 @@ export default function TabsLayout() {
         options={{
           title: "Alerts",
           tabBarIcon: tabBarIcon("🔔"),
-          ...(showAlerts
-            ? {}
-            : {
-                tabBarItemStyle: { display: "none", width: 0, height: 0 },
-                tabBarButton: () => null,
-              }),
+          ...(showAlerts ? {} : { tabBarItemStyle: { display: "none" } }),
         }}
       />
       <Tabs.Screen name="menu" options={{ title: "Menu", tabBarIcon: tabBarIcon("☰") }} />
