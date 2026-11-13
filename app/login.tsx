@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Stack, useRouter } from "expo-router";
+import { Redirect, Stack, useRouter } from "expo-router";
 import { PasswordField } from "../src/ui";
 import { useAuth } from "../src/auth/AuthContext";
 import { loginWithPassword, selectStudent } from "../src/api/auth";
@@ -12,7 +12,7 @@ import BrandLogo from "../src/components/BrandLogo";
 import { colors } from "../src/theme";
 
 export default function LoginScreen() {
-  const { applySession } = useAuth();
+  const { user, applySession } = useAuth();
   const router = useRouter();
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
@@ -65,6 +65,15 @@ export default function LoginScreen() {
       setBusy(false);
     }
   };
+
+  if (user) {
+    return (
+      <>
+        <Stack.Screen options={{ headerShown: false }} />
+        <Redirect href="/(tabs)" />
+      </>
+    );
+  }
 
   return (
     <>

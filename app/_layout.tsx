@@ -27,9 +27,9 @@ function Gate() {
     // Signed-in users should not stay on marketing/auth routes (incl. after login).
     if (
       user &&
-      (route === "contact" || route === "register" || route === "index" || route === "login")
+      (route === "contact" || route === "register" || route === "index")
     ) {
-      const id = requestAnimationFrame(() => router.replace("/(tabs)/index"));
+      const id = requestAnimationFrame(() => router.replace("/(tabs)"));
       return () => cancelAnimationFrame(id);
     }
   }, [user, loading, segments, router]);
@@ -58,7 +58,12 @@ function Gate() {
           contentStyle: { backgroundColor: colors.canvas },
           animation: "slide_from_right",
         }}
-      />
+      >
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="contact" options={{ headerShown: false }} />
+        <Stack.Screen name="login" options={{ headerShown: false }} />
+        <Stack.Screen name="index" options={{ headerShown: false }} />
+      </Stack>
     </ErrorBoundary>
   );
 }
