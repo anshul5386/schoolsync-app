@@ -112,6 +112,12 @@ export default function ContactScreen() {
             <Text style={s.signInText}>Sign in</Text>
           </Pressable>
 
+          <Pressable onPress={() => router.push("/register")} accessibilityRole="link" style={{ alignItems: "center", paddingVertical: 10 }}>
+            <Text style={{ fontSize: 13, color: colors.inkMuted }}>
+              Teacher or student without a login? <Text style={{ color: colors.navy, fontWeight: "700" }}>Request an account</Text>
+            </Text>
+          </Pressable>
+
           <Text style={s.kicker}>NEW TO EASOOL? TALK TO US</Text>
           {!!WHATSAPP_NUMBER && (
             <ContactRow icon="phone" title="WhatsApp us" sub="Fastest reply" onPress={openWhatsApp} />
