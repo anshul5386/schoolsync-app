@@ -12,6 +12,7 @@ import { errorMessage } from "../../src/api/client";
 import { displayName, firstName, greeting, initials, longDate } from "../../src/lib/name";
 import NoticeStrip from "../../src/components/NoticeStrip";
 import SuperAdminHome from "../../src/screens/SuperAdminHome";
+import { AttendanceRingCard, BentoTile, MonthStatusCalendar, useMyMonthDays } from "../../src/components/AttendanceBento";
 import { colors } from "../../src/theme";
 
 const ADMIN_ROLES = ["PRINCIPAL", "COORDINATOR", "SCHOOL_ADMIN", "SUB_COORDINATOR"];
@@ -79,6 +80,7 @@ function Dashboard() {
 
   useEffect(() => { load(); }, [load]);
 
+  const month = useMyMonthDays(isTeacher || isStudent, tick);
   const insets = useSafeAreaInsets();
   // Light status-bar icons over the navy hero; restore the app default when leaving Home.
   useFocusEffect(useCallback(() => {
@@ -98,6 +100,7 @@ function Dashboard() {
   const startOfToday = new Date(new Date().toDateString());
   // Only what is still due, soonest first, capped at three.
   const upcoming = assignments.filter((a) => new Date(a.dueDate) >= startOfToday).slice(0, 3);
+  const overdue = assignments.filter((a) => new Date(a.dueDate) < startOfToday);
 
   const focus = isLeadership ? null
     : deriveFocus({ stats, isAdmin: isOperationalAdmin, isTeacher, isStudent, pending });
@@ -156,9 +159,9 @@ function Dashboard() {
           {/* KPI tiles */}
           {loading ? (
             <View style={[st.surface, { padding: 28, alignItems: "center" }]}><ActivityIndicator color={colors.navy} /></View>
-          ) : (
+          ) : isAdmin && (
             <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12 }}>
-              {isAdmin && (
+              {(
                 <>
                   <Stat icon="🎒" tint={TINTS.blue} label="Students" value={String(stats?.totalStudents ?? "—")}
                     sub={`Across ${stats?.totalClasses ?? 0} classes`} />
@@ -171,22 +174,37 @@ function Dashboard() {
                   <Stat icon="🏫" tint={TINTS.violet} label="Classes" value={String(stats?.totalClasses ?? 0)} sub="Active this year" />
                 </>
               )}
-              {isTeacher && (
-                <>
-                  <Stat icon="▥" tint={TINTS.blue} label="My periods" value={String(stats?.myClassCount ?? 0)} sub="Assigned to you" />
-                  <Stat icon="✓" tint={teacherDone(stats) ? TINTS.green : TINTS.amber} label="Attendance marked"
-                    value={`${stats?.classesAttMarked ?? 0}/${stats?.myClassCount ?? 0}`}
-                    sub={teacherDone(stats) ? "All done today" : "Still outstanding"} />
-                </>
-              )}
-              {isStudent && (
-                <Stat wide icon="📊" tint={(stats?.myAttendancePercentage ?? 0) >= 75 ? TINTS.green : TINTS.rose}
-                  label="My attendance"
-                  value={stats?.myAttendancePercentage != null ? `${stats.myAttendancePercentage}%` : "—"}
-                  sub="Minimum required is 75%"
-                  progress={stats?.myAttendancePercentage ?? undefined} />
-              )}
             </View>
+          )}
+
+          {(isTeacher || isStudent) && !loading && (
+            <>
+              {/* Bento: ring + counts | two tiles, then the colour-coded month */}
+              <View style={{ flexDirection: "row", gap: 12 }}>
+                <AttendanceRingCard
+                  title={isStudent ? "Attendance" : "My attendance"}
+                  pct={isStudent ? stats?.myAttendancePercentage ?? null : month.counts.pct}
+                  ringLabel={isStudent ? "This year" : "This month"}
+                  month={month} />
+                <View style={{ flex: 1, gap: 12 }}>
+                  {isTeacher ? (
+                    <>
+                      <BentoTile label="Marked today" value={`${stats?.classesAttMarked ?? 0}/${stats?.myClassCount ?? 0}`}
+                        sub={teacherDone(stats) ? "All done today" : "Still pending"} tone={teacherDone(stats) ? "good" : "warn"} />
+                      <BentoTile label="My classes" value={String(stats?.myClassCount ?? 0)} sub="Assigned to you" />
+                    </>
+                  ) : (
+                    <>
+                      <BentoTile label="Due soon" value={String(upcoming.length)} sub="Next 14 days"
+                        tone={upcoming.length ? "warn" : "muted"} />
+                      <BentoTile label="Overdue" value={String(overdue.length)} sub="Past due date"
+                        tone={overdue.length ? "bad" : "muted"} />
+                    </>
+                  )}
+                </View>
+              </View>
+              <MonthStatusCalendar {...month} />
+            </>
           )}
 
           {!!error && <Message m={{ type: "error", text: error }} />}
