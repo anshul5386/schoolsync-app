@@ -27,6 +27,11 @@ export const getSchoolSetup = (schoolId: string) => api.get(`/super-admin/school
 export const getDeletionPreview = (schoolId: string) =>
   api.get(`/super-admin/schools/${schoolId}/deletion-preview`);
 
-/** Deletion. confirmName must match the school's name exactly. POST (not DELETE) because the confirmation is in the body. */
-export const deleteSchool = (schoolId: string, confirmName: string) =>
+/**
+ * Permanent, irreversible deletion. confirmName must match the school's name exactly.
+ *
+ * POST, not DELETE, because the confirmation travels in the body and DELETE bodies are
+ * unreliable through proxies.
+ */
+export const deleteSchoolPermanently = (schoolId: string, confirmName: string) =>
   api.post(`/super-admin/schools/${schoolId}/delete`, { confirmName });

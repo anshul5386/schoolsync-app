@@ -14,3 +14,10 @@ export const bulkMarkAttendance = (classSectionId: string, marks: AttendanceMark
 
 export const getStudentSummary = (studentId: string, from?: string, to?: string) =>
   api.get(`/attendance/students/${studentId}/summary`, { params: { from, to } });
+
+/**
+ * One status per day for the signed-in user (student: class attendance; staff: own attendance).
+ * -> [{ date: "YYYY-MM-DD", status: "PRESENT" | "ABSENT" | "LEAVE" | "PARTIAL" }]
+ */
+export const getMyAttendanceDays = (from: string, to: string) =>
+  api.get("/attendance/me/days", { params: { from, to } });

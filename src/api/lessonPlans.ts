@@ -5,7 +5,9 @@ export type LessonPlanPayload = {
   title: string;
   subject: string;
   planDate: string;
+  endDate?: string;
   content?: string;
+  teacherId?: string;
 };
 
 export const getLessonPlans = (classSectionId?: string) =>

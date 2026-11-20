@@ -58,7 +58,7 @@ export default function ProfileScreen() {
       {!!error && <Message m={{ type: "error", text: error }} />}
       {loading ? <Loading /> : (
         <>
-          <Card title="Account">
+          <Card title="Personal details">
             <Item label="Name" value={profile?.name || user?.name} />
             <Item label="Role" value={profile?.role || user?.role} />
             <Item label="Phone" value={profile?.phone} />
@@ -67,18 +67,25 @@ export default function ProfileScreen() {
           </Card>
 
           {profile?.student && (
-            <Card title="Student">
+            <Card title="Class & parents">
               <Item label="Class" value={profile.student.classLabel} />
               <Item label="Roll number" value={String(profile.student.rollNumber ?? "")} />
+              <Text style={{ fontSize: 12, color: colors.inkSubtle, lineHeight: 18 }}>
+                Parents receive alerts for absences, assignments, and exam results.
+              </Text>
               <Item label="Father" value={profile.student.fatherName} />
+              <Item label="Father phone" value={profile.student.fatherPhone} />
               <Item label="Mother" value={profile.student.motherName} />
-              <Item label="Parent phone" value={profile.student.parentPhone} />
+              <Item label="Mother phone" value={profile.student.motherPhone} />
+              <Item label="Guardian" value={profile.student.guardianName} />
+              <Item label="Guardian phone" value={profile.student.guardianPhone} />
             </Card>
           )}
 
           {profile?.teacher && (
             <Card title="Teaching">
               <Item label="Subjects" value={(profile.teacher.subjects || []).join(", ")} />
+              <Item label="Classes" value={(profile.teacher.classLabels || []).join(", ")} />
             </Card>
           )}
 
