@@ -92,9 +92,24 @@ export default function LoginScreen() {
               <Text style={s.buttonText}>{busy ? "Signing in…" : "Sign in"}</Text>
             </Pressable>
 
-            <Pressable onPress={() => router.push("/contact")} style={{ marginTop: 16, alignItems: "center" }}>
+            {/* Teachers and students without a login apply here; the principal approves. */}
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginTop: 20 }}>
+              <View style={{ flex: 1, height: 1, backgroundColor: colors.line }} />
+              <Text style={{ fontSize: 11, fontWeight: "600", letterSpacing: 0.8, color: colors.inkSubtle }}>NEW HERE?</Text>
+              <View style={{ flex: 1, height: 1, backgroundColor: colors.line }} />
+            </View>
+            <Pressable onPress={() => router.push("/register")} accessibilityRole="button"
+              style={({ pressed }) => [{ marginTop: 12, minHeight: 48, borderRadius: 12, borderWidth: 1.5, borderColor: "#D5DCEB",
+                alignItems: "center", justifyContent: "center", backgroundColor: colors.white }, pressed && { backgroundColor: colors.navy50 }]}>
+              <Text style={{ color: colors.navy, fontSize: 15, fontWeight: "700" }}>Request an account</Text>
+            </Pressable>
+            <Text style={{ marginTop: 6, textAlign: "center", fontSize: 12, color: colors.inkSubtle }}>
+              For teachers and students. Your school approves the request.
+            </Text>
+
+            <Pressable onPress={() => router.push("/contact")} style={{ marginTop: 16, alignItems: "center", paddingVertical: 6 }}>
               <Text style={{ color: colors.inkMuted, fontSize: 13 }}>
-                Need access? <Text style={{ color: colors.navy, fontWeight: "600" }}>Contact us</Text>
+                New school? <Text style={{ color: colors.navy, fontWeight: "600" }}>Contact us</Text>
               </Text>
             </Pressable>
           </>

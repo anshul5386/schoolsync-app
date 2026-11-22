@@ -11,3 +11,10 @@ const DEFAULT_API = "https://schoolsync-api-production.up.railway.app";
 export const API_BASE_URL = (process.env.EXPO_PUBLIC_API_BASE_URL || DEFAULT_API).replace(/\/$/, "");
 
 export const isApiConfigured = API_BASE_URL.length > 0 && !API_BASE_URL.includes("YOUR-SCHOOLSYNC");
+
+/**
+ * First point of contact for new schools. Set EXPO_PUBLIC_WHATSAPP_NUMBER (digits with country
+ * code, no "+" or spaces, e.g. 919876543210) to show the "WhatsApp us" option on the welcome screen.
+ */
+export const WHATSAPP_NUMBER = (process.env.EXPO_PUBLIC_WHATSAPP_NUMBER || "").replace(/\D/g, "");
+export const CONTACT_EMAIL = "hello@easool.com";

@@ -60,7 +60,10 @@ function Gate() {
           contentStyle: { backgroundColor: colors.canvas },
           animation: "slide_from_right",
         }}
-      />
+      >
+        {/* The tab group draws its own headers; without this the root stack shows a "(tabs)" bar on top. */}
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      </Stack>
     </ErrorBoundary>
   );
 }
