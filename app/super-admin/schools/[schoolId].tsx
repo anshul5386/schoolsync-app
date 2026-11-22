@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { Text, View } from "react-native";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import {
-  getSchoolClasses, renameSchoolClass, activateSchool, deactivateSchool, getDeletionPreview, deleteSchool,
+  getSchoolClasses, renameSchoolClass, activateSchool, deactivateSchool, getDeletionPreview, deleteSchoolPermanently,
 } from "../../../src/api/schoolOnboarding";
 import { errorMessage } from "../../../src/api/client";
 import { useAuth } from "../../../src/auth/AuthContext";
@@ -60,7 +60,7 @@ export default function SchoolDetailScreen() {
   const onDelete = async () => {
     setBusy(true); setMessage(null);
     try {
-      const res = await deleteSchool(schoolId, confirmName);
+      const res = await deleteSchoolPermanently(schoolId, confirmName);
       // Navigate away: the school this screen is about no longer exists, so reloading would fail.
       router.replace({ pathname: "/super-admin/schools", params: { flash: res?.data?.message || "School deleted." } });
     } catch (err) {
@@ -120,34 +120,44 @@ export default function SchoolDetailScreen() {
 
           <Card title="Delete this school" style={{ borderColor: "#F0B8B2", marginTop: 16 }}>
             <Text style={{ fontSize: 11, color: colors.danger }}>
-              This is a soft delete: the school is marked inactive and hidden from normal use. Nothing is
-              destroyed, and a super admin can restore it at any time.
+              Permanent. Every account, student record, attendance entry, result and notice is destroyed.
+              There is no undo and no backup taken by the application.
             </Text>
             {preview && (
               <View style={{ gap: 2, marginVertical: 6 }}>
                 <Text style={{ fontSize: 12, color: colors.inkMuted }}>{preview.userCount} user accounts</Text>
                 <Text style={{ fontSize: 12, color: colors.inkMuted }}>{preview.studentCount} student records</Text>
                 <Text style={{ fontSize: 12, color: colors.inkMuted }}>{preview.classCount} classes</Text>
+                <Text style={{ fontSize: 12, color: colors.inkMuted }}>{preview.attendanceRecordCount} attendance entries</Text>
+                <Text style={{ fontSize: 12, color: colors.inkSubtle }}>{preview.totalRows} records in total</Text>
               </View>
             )}
 
-            {preview && preview.active === false ? (
+            {preview && !preview.deletable ? (
               <>
                 <Text style={{ fontSize: 12, color: colors.inkMuted }}>
-                  This school is already inactive. Restore it to bring it back into normal use.
+                  This school is still active. Suspend it first — that takes it offline straight away and
+                  is fully reversible. Deleting is only possible afterwards, so a live school can never
+                  be destroyed in one action.
                 </Text>
-                <Button variant="secondary" disabled={busy} onPress={() => run(() => activateSchool(schoolId), "School restored.")}>
-                  Restore school
+                <Button variant="secondary" disabled={busy} onPress={() => run(() => deactivateSchool(schoolId), "School suspended.")}>
+                  Suspend school
                 </Button>
               </>
             ) : preview ? (
               <>
-                {!deleteArmed && <Button variant="danger" onPress={() => setDeleteArmed(true)}>Delete school</Button>}
+                <Text style={{ fontSize: 12, color: colors.inkMuted }}>
+                  Suspended. It can still be restored — deleting is what cannot be undone.
+                </Text>
+                <Button variant="secondary" disabled={busy} onPress={() => run(() => activateSchool(schoolId), "School restored.")}>
+                  Restore school
+                </Button>
+                {!deleteArmed && <Button variant="danger" onPress={() => setDeleteArmed(true)}>Delete permanently</Button>}
                 {deleteArmed && (
                   <View style={{ gap: 10, borderTopWidth: 1, borderTopColor: colors.line, paddingTop: 10 }}>
                     <Field label={`Type ${preview.name} to confirm`} value={confirmName} onChangeText={setConfirmName}
                       autoCapitalize="none" autoCorrect={false} autoComplete="off" />
-                    <Button variant="danger" busy={busy} disabled={!nameMatches} onPress={onDelete}>Delete this school</Button>
+                    <Button variant="danger" busy={busy} disabled={!nameMatches} onPress={onDelete}>Delete this school forever</Button>
                     <Button variant="secondary" onPress={() => { setDeleteArmed(false); setConfirmName(""); }}>Cancel</Button>
                   </View>
                 )}

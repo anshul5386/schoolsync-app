@@ -43,3 +43,6 @@ export const getResults = (params: { examId?: string; classSectionId?: string } 
 
 export const saveResults = (examId: string, results: ResultEntry[]) =>
   api.post("/records/results/bulk", { examId, results });
+
+export const downloadReportCard = (examId: string) =>
+  api.get("/records/report-cards", { params: { examId }, responseType: "blob" });
